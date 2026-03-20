@@ -2,208 +2,137 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduQuiz - Supabase İşlevsel Sınav</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<title>Çakma Yapay Zeka Sınav Sistemi - Ultimate</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-body{font-family:sans-serif;background:#f5f3ee;margin:0;padding:0;}
-nav{padding:10px 20px;background:#fff;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ccc;}
-h1,h2,h3{margin:0 0 10px 0;}
-.container{max-width:900px;margin:20px auto;padding:0 20px;}
-button{cursor:pointer;padding:8px 14px;border:none;border-radius:6px;background:#c8401a;color:#fff;margin:2px;}
-input,select,textarea{padding:8px;border:1px solid #ccc;border-radius:6px;width:100%;margin:4px 0;}
-.screen{display:none;}
-.screen.active{display:block;}
-.quiz-card{border:1px solid #ccc;border-radius:10px;padding:14px;margin-bottom:12px;}
-.option-row{padding:8px;border:1px solid #ccc;margin:4px 0;border-radius:6px;cursor:pointer;}
-.option-row.sel{background:#c8401a;color:#fff;}
-.result{border:1px solid #16a34a;padding:14px;border-radius:8px;margin-top:14px;background:#e6ffe6;}
+body { font-family: Arial, sans-serif; margin:20px; background:#f5f5f5; }
+h1,h2{color:#333;} 
+.container{max-width:950px;margin:auto;background:white;padding:20px;border-radius:8px;box-shadow:0 0 15px rgba(0,0,0,0.15);}
+.student, .exam, .ai { margin-top:20px; padding:15px; border:1px solid #ddd; border-radius:5px; background:#fafafa;}
+input, select, button, textarea {padding:8px;margin:5px 0;width:100%;border-radius:4px;border:1px solid #ccc;}
+button{background:#4CAF50;color:white;border:none;cursor:pointer;}
+button:hover{background:#45a049;}
+.question{margin-bottom:15px;}
 </style>
 </head>
 <body>
-
-<nav>
-  <div>EduQuiz</div>
-  <button onclick="showScreen('landing')">Ana Sayfa</button>
-</nav>
-
 <div class="container">
+<h1>Çakma Yapay Zeka Sınav Sistemi - Ultimate</h1>
 
-<!-- SETUP -->
-<div class="screen active" id="setup">
-<h2>Supabase Bağlantısı</h2>
-<p>Proje URL ve Anon Key girin:</p>
-<input type="text" id="supabaseUrl" placeholder="Supabase Project URL">
-<input type="text" id="supabaseKey" placeholder="Supabase Anon Key">
-<input type="password" id="teacherPw" placeholder="Öğretmen Şifresi" value="1234">
-<button onclick="initSupabase()">Başlat</button>
+<div class="student">
+<h2>Öğrenci Kaydı</h2>
+<input type="text" id="stuName" placeholder="Ad Soyad">
+<input type="text" id="stuEmail" placeholder="Email">
+<button onclick="registerStudent()">Kaydet</button>
+<p id="stuMsg"></p>
 </div>
 
-<!-- LANDING -->
-<div class="screen" id="landing">
-<h2>Hoşgeldiniz</h2>
-<button onclick="showScreen('teacherLogin')">👩‍🏫 Öğretmen</button>
-<button onclick="showScreen('studentSelect')">🎓 Öğrenci</button>
+<div class="exam">
+<h2>Sınav</h2>
+<select id="examTopic">
+  <option value="matematik">Matematik</option>
+  <option value="coğrafya">Coğrafya</option>
+  <option value="fen">Fen</option>
+</select>
+<button onclick="startExam()">Sınavı Başlat</button>
+<div id="examArea"></div>
+<p id="examMsg"></p>
 </div>
 
-<!-- TEACHER LOGIN -->
-<div class="screen" id="teacherLogin">
-<h2>Öğretmen Girişi</h2>
-<input type="password" id="pwInput" placeholder="Şifre">
-<button onclick="checkPw()">Giriş</button>
+<div class="ai">
+<h2>Çakma AI Yardım</h2>
+<textarea id="aiQuery" placeholder="Soru sor veya ipucu al..."></textarea>
+<button onclick="aiAnswer()">Sor</button>
+<p id="aiResponse"></p>
 </div>
-
-<!-- TEACHER DASHBOARD -->
-<div class="screen" id="teacher">
-<h2>Öğretmen Paneli</h2>
-<button onclick="renderQuizzes()">Sınavları Göster</button>
-<button onclick="showAddQuiz()">Yeni Sınav Ekle</button>
-<div id="teacherContent"></div>
-</div>
-
-<!-- ADD QUIZ -->
-<div class="screen" id="addQuiz">
-<h2>Yeni Sınav Oluştur</h2>
-<input type="text" id="quizTitle" placeholder="Sınav Başlığı">
-<input type="number" id="quizTime" placeholder="Süre (dakika)">
-<button onclick="saveQuiz()">Kaydet</button>
-</div>
-
-<!-- STUDENT SELECT -->
-<div class="screen" id="studentSelect">
-<h2>Öğrenci Paneli</h2>
-<input type="text" id="studentName" placeholder="Adınız">
-<select id="quizSelect"></select>
-<button onclick="startQuiz()">Başla</button>
-</div>
-
-<!-- QUIZ -->
-<div class="screen" id="quizScreen">
-<h2 id="quizTitleStudent"></h2>
-<div id="quizArea"></div>
-<button onclick="submitQuiz()">Gönder</button>
-</div>
-
-<!-- RESULT -->
-<div class="screen" id="resultScreen">
-<h2>Sonuç</h2>
-<div id="resultArea"></div>
-</div>
-
 </div>
 
 <script>
-// ══════════ SUPABASE BAĞLANTI ══════════
-let supabase;
-let teacherPassword;
-let currentQuiz, studentAnswers=[], studentName;
+// --- Supabase Bağlantısı ---
+const SUPABASE_URL = "https://YOUR_SUPABASE_URL.supabase.co";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function initSupabase(){
-  const url = document.getElementById('supabaseUrl').value.trim();
-  const key = document.getElementById('supabaseKey').value.trim();
-  teacherPassword = document.getElementById('teacherPw').value;
-  if(!url||!key){alert('URL ve Key gerekli'); return;}
-  supabase = Supabase.createClient(url,key);
-  alert('Supabase bağlantısı başarılı!');
-  showScreen('landing');
-}
-
-// ══════════ SCREEN SWITCH ══════════
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+// --- Öğrenci Kaydı ---
+async function registerStudent(){
+  const name = document.getElementById('stuName').value;
+  const email = document.getElementById('stuEmail').value;
+  if(!name || !email){document.getElementById('stuMsg').innerText="İsim ve email gerekli!"; return;}
+  const {data,error} = await supabase.from('students').insert([{name,email}]);
+  if(error){document.getElementById('stuMsg').innerText="Hata: "+error.message;} 
+  else {document.getElementById('stuMsg').innerText="Kayıt başarılı!";}
 }
 
-// ══════════ TEACHER LOGIN ══════════
-function checkPw(){
-  const pw = document.getElementById('pwInput').value;
-  if(pw===teacherPassword){ showScreen('teacher'); renderQuizzes(); }
-  else alert('Yanlış şifre!');
-}
-
-// ══════════ TEACHER FUNCTIONS ══════════
-async function renderQuizzes(){
-  const {data,error} = await supabase.from('quizzes').select('*');
-  const container = document.getElementById('teacherContent');
-  container.innerHTML='';
-  if(error){container.innerText='Hata: '+error.message; return;}
-  data.forEach(q=>{
-    const div = document.createElement('div');
-    div.className='quiz-card';
-    div.innerHTML=`${q.name} (${q.time_limit} dk)
-      <button onclick="editQuiz('${q.id}')">Düzenle</button>
-      <button onclick="deleteQuiz('${q.id}')">Sil</button>`;
-    container.appendChild(div);
-  });
-}
-function showAddQuiz(){ showScreen('addQuiz'); }
-async function saveQuiz(){
-  const name = document.getElementById('quizTitle').value.trim();
-  const time = parseInt(document.getElementById('quizTime').value)||0;
-  if(!name){alert('Başlık gerekli'); return;}
-  await supabase.from('quizzes').insert({name:name,time_limit:time});
-  alert('Sınav kaydedildi');
-  showScreen('teacher');
-  renderQuizzes();
-}
-async function deleteQuiz(id){
-  if(!confirm('Silinsin mi?')) return;
-  await supabase.from('quizzes').delete().eq('id',id);
-  renderQuizzes();
-}
-
-// ══════════ STUDENT FUNCTIONS ══════════
-async function startQuiz(){
-  studentName=document.getElementById('studentName').value.trim();
-  if(!studentName){alert('Adınızı girin'); return;}
-  const quizId=document.getElementById('quizSelect').value;
-  const {data,error}=await supabase.from('quizzes').select('*').eq('id',quizId).single();
-  if(error){alert('Hata: '+error.message); return;}
-  currentQuiz=data;
-  studentAnswers=[];
-  showScreen('quizScreen');
-  renderStudentQuiz();
-}
-async function renderStudentQuiz(){
-  document.getElementById('quizTitleStudent').innerText=currentQuiz.name;
-  const area=document.getElementById('quizArea');
-  area.innerHTML='';
-  if(!currentQuiz.questions || currentQuiz.questions.length===0){ area.innerText='Sorular yok.'; return;}
-  currentQuiz.questions.forEach((q,i)=>{
-    const div=document.createElement('div');
-    div.className='quiz-card';
-    div.innerHTML=`<div>${i+1}. ${q.text}</div>`;
-    q.options.forEach((opt,j)=>{
-      const btn=document.createElement('div');
-      btn.className='option-row';
-      btn.innerText=opt;
-      btn.onclick=()=>{studentAnswers[i]=j; renderStudentQuiz();}
-      if(studentAnswers[i]===j) btn.classList.add('sel');
-      div.appendChild(btn);
+// --- 1100+ Otomatik Soru Üretimi ---
+function generateQuestions(topic){
+  let questions=[];
+  for(let i=1;i<=1100;i++){
+    questions.push({
+      q:`${topic} sorusu #${i}?`,
+      a:[`${i}`,`${i+1}`,`${i+2}`,`${i+3}`],
+      correct:i%4
     });
-    area.appendChild(div);
-  });
-}
-async function submitQuiz(){
-  let correct=0;
-  currentQuiz.questions.forEach((q,i)=>{
-    if(studentAnswers[i]===q.answer) correct++;
-  });
-  const score=Math.round((correct/currentQuiz.questions.length)*100);
-  await supabase.from('results').insert({student_name:studentName,quiz_id:currentQuiz.id,score:score,answers:studentAnswers});
-  showScreen('resultScreen');
-  document.getElementById('resultArea').innerHTML=`<div class="result">${studentName}, Puanınız: ${score}% (${correct}/${currentQuiz.questions.length})</div>`;
+  }
+  return questions;
 }
 
-// ══════════ POPULATE STUDENT QUIZ LIST ══════════
-async function populateStudentQuizzes(){
-  const {data,error}=await supabase.from('quizzes').select('*');
-  const sel=document.getElementById('quizSelect');
-  sel.innerHTML='';
-  if(data) data.forEach(q=>{const opt=document.createElement('option'); opt.value=q.id; opt.innerText=q.name; sel.appendChild(opt);});
+// --- Sınav Başlat ---
+function startExam(){
+  const topic = document.getElementById('examTopic').value;
+  const examArea = document.getElementById('examArea');
+  examArea.innerHTML="";
+  const qList = generateQuestions(topic);
+  qList.slice(0,10).forEach((q,i)=>{ // İlk 10 soruyu göster
+    let div = document.createElement('div');
+    div.className="question";
+    div.innerHTML=`<p>${i+1}. ${q.q}</p>
+      ${q.a.map((opt,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${opt}</label><br>`).join('')}`;
+    examArea.appendChild(div);
+  });
+  let btn = document.createElement('button');
+  btn.innerText="Cevapla";
+  btn.onclick=()=>submitExam(topic,qList.slice(0,10));
+  examArea.appendChild(btn);
 }
-document.getElementById('studentSelect').addEventListener('click',populateStudentQuizzes);
 
+// --- Sınav Gönder ---
+async function submitExam(topic,qList){
+  let score=0;
+  qList.forEach((q,i)=>{
+    const radios = document.getElementsByName('q'+i);
+    for(let r of radios){if(r.checked && parseInt(r.value)===q.correct) score++;}
+  });
+  document.getElementById('examMsg').innerText=`Puanınız: ${score} / ${qList.length}`;
+  const email = document.getElementById('stuEmail').value;
+  if(email){
+    await supabase.from('results').insert([{email,topic,score,date:new Date()}]);
+  }
+}
+
+// --- Çakma AI ---
+function aiAnswer(){
+  const query = document.getElementById('aiQuery').value.toLowerCase();
+  let answer="";
+  if(query.includes("ipucu")||query.includes("yardım")){
+    answer="Sınav ipucu: Soruyu dikkatle oku, seçenekleri değerlendir, mantık kur.";
+  } else if(query.includes("2+2")){
+    answer="Cevap 4!";
+  } else if(query.includes("başkent")){
+    answer="Türkiye'nin başkenti Ankara'dır.";
+  } else if(query.includes("soru")){
+    answer="Örnek soru: 5*5=? Cevap 25.";
+  } else { answer="Bunu çözmek için daha fazla bilgiye ihtiyacım var."; }
+  document.getElementById('aiResponse').innerText=answer;
+}
+
+// --- Otomatik tablo yaratma (Supabase) ---
+async function createTables(){
+  try{
+    await supabase.rpc('sql', {sql:"CREATE TABLE IF NOT EXISTS students(id serial primary key,name text,email text unique);" });
+    await supabase.rpc('sql', {sql:"CREATE TABLE IF NOT EXISTS results(id serial primary key,email text,topic text,score int,date timestamp);" });
+  }catch(e){console.log(e);}
+}
+createTables();
 </script>
 </body>
 </html>
