@@ -807,26 +807,29 @@ function addManualQ(){
 </div>
 <div class="inline-row">
   <span>Dogru:</span>
-  <select id="mqans-${id}"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select>
-  <input type="text" id="mqexp-${id}" placeholder="Aciklama (opsiyonel)" />
-  <button class="btn btn-ghost btn-sm" onclick="commitManualQ(${id})">✓ Ekle</button>
-</div>`;
-```
+  function commitManualQ(id){
+  const text=document.getElementById(`mqt-${id}`)?.value?.trim();
 
-area.appendChild(div);
-}
+  if(!text){
+    showToast('⚠️ Soru metni bos!');
+    return;
+  }
 
-function commitManualQ(id){
-const text=document.getElementById(`mqt-${id}`)?.value?.trim();
-if(!text){ showToast(‘⚠️ Soru metni bos!’); return; }
-const opts=[‘a’,‘b’,‘c’,‘d’].map(l=>document.getElementById(`mq${l}-${id}`)?.value?.trim()).filter(Boolean);
-if(opts.length<2){ showToast(‘⚠️ En az 2 sik girin.’); return; }
-const correct=parseInt(document.getElementById(`mqans-${id}`)?.value||‘0’);
-const explanation=document.getElementById(`mqexp-${id}`)?.value?.trim()||’’;
-draftQuestions.push({text,options:opts,correct,explanation});
-document.getElementById(`mqe-${id}`)?.remove();
-renderDraftQ();
-showToast(‘✅ Soru eklendi!’);
+  const opts=['a','b','c','d'].map(l=>document.getElementById(`mq${l}-${id}`)?.value?.trim()).filter(Boolean);
+
+  if(opts.length<2){
+    showToast('⚠️ En az 2 sik girin.');
+    return;
+  }
+
+  const correct=parseInt(document.getElementById(`mqans-${id}`)?.value || '0');
+  const explanation=document.getElementById(`mqexp-${id}`)?.value?.trim() || '';
+
+  draftQuestions.push({text, options:opts, correct, explanation});
+  document.getElementById(`mqe-${id}`)?.remove();
+
+  renderDraftQ();
+  showToast('✅ Soru eklendi!');
 }
 
 function renderDraftQ(){
