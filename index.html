@@ -791,7 +791,7 @@ function addManualQ(){
   const area=document.getElementById('manual-q-area');
   const div=document.createElement('div');
   div.className='manual-q-editor'; div.id=`mqe-${id}`;
-  div.innerHTML=`
+  div.innerHTML=
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:.82rem;color:var(--accent)">SORU ${id}</span>
       <button class="btn btn-danger btn-sm" onclick="this.closest('.manual-q-editor').remove()">Sil</button>
