@@ -745,7 +745,7 @@ async function callAI(){
   }
 
   const systemInstruction = `Gonderilen metin veya PDF icindeki coktan secmeli sorulari cikar. 
-  SADECE gecerli bir JSON dizisi (array) dondur. JSON disinda hicbir aciklama metni yazma. 
+  SADECE gecerli bir JSON dizisi (array) dondur. JSON disinda hicbir aciklama metni veya markdown isareti (\`\`\`json) yazma. 
   Format su sekilde olmali:
   [{"text":"Soru metni","options":["A sikki","B sikki","C sikki","D sikki"],"correct":0,"explanation":"Kisa aciklama"}]
   Dogru cevap (correct) 0 ile 3 arasinda bir sayi olmalidir. Bilinmiyorsa -1 yaz.`;
@@ -780,7 +780,9 @@ async function callAI(){
   const data = await res.json();
   const rawText = data.candidates[0].content.parts[0].text;
   
-  return JSON.parse(rawText.trim());
+  const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+  
+  return JSON.parse(cleanedText);
 }
 
 function addManualQ(){
