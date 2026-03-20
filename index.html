@@ -1,562 +1,351 @@
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduQuiz — Online Sinav Platformu</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<title>Pozitif Eğitim - Akıllı Quiz Sistemi</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f5f3ee;--bg2:#eceae3;--ink:#1a1814;--ink2:#4a4740;--ink3:#8a8680;
-  --accent:#c8401a;--accent2:#2563c8;--accent3:#16a34a;
-  --border:#d6d2c8;--surface:#ffffff;--surface2:#faf9f5;
-  --correct:#16a34a;--wrong:#dc2626;--warning:#d97706;
-  --shadow:0 2px 12px rgba(26,24,20,.08);--shadow-lg:0 8px 40px rgba(26,24,20,.14);
+  --bg:#0f172a;
+  --card:#1e293b;
+  --primary:#22c55e;
+  --secondary:#334155;
+  --text:#e2e8f0;
+  --danger:#ef4444;
 }
-body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.5}
-h1,h2,h3,h4,.brand{font-family:'Bricolage Grotesque',sans-serif}
-.screen{display:none;min-height:100vh}
-.screen.active{display:block;animation:fadeIn .3s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-/* NAV */
-nav{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
-.brand{font-size:1.4rem;font-weight:800;letter-spacing:-1px}
-.brand span{color:var(--accent)}
-.nav-right{display:flex;align-items:center;gap:12px}
-#timer-widget{display:none;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:8px;padding:8px 16px;font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem;font-weight:700}
-#timer-widget.warn{background:var(--warning)}
-#timer-widget.danger{background:var(--wrong);animation:blink .6s ease infinite}
-@keyframes blink{50%{opacity:.6}}
+*{box-sizing:border-box}
 
-/* SETUP SCREEN */
-.setup-wrap{max-width:680px;margin:60px auto;padding:0 20px}
-.setup-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px;box-shadow:var(--shadow-lg)}
-.setup-card h2{font-size:1.8rem;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
-.setup-card p{color:var(--ink3);margin-bottom:28px;font-size:.95rem;line-height:1.6}
-.setup-step{display:flex;gap:16px;align-items:flex-start;margin-bottom:20px;padding:16px;background:var(--bg);border-radius:12px;border:1px solid var(--border)}
-.step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
-.step-body h4{font-weight:700;margin-bottom:4px;font-size:.92rem}
-.step-body p{color:var(--ink3);font-size:.83rem;line-height:1.5;margin:0}
-.sql-block{background:#1a1814;color:#a8e6cf;padding:14px 16px;border-radius:10px;font-size:.78rem;line-height:1.7;margin:10px 0;overflow-x:auto;white-space:pre}
+body{
+  margin:0;
+  font-family:system-ui;
+  background:var(--bg);
+  color:var(--text);
+}
 
-/* INPUTS */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:.78rem;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
-.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.92rem;outline:none;transition:border-color .2s}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
-.field textarea{resize:vertical;min-height:80px}
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:20px;
+}
 
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:8px;font-family:'Bricolage Grotesque',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;text-decoration:none;white-space:nowrap}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:#a83514;transform:translateY(-1px);box-shadow:0 4px 16px rgba(200,64,26,.3)}
-.btn-primary:disabled{opacity:.4;pointer-events:none}
-.btn-secondary{background:var(--ink);color:#fff}
-.btn-ghost{background:transparent;color:var(--ink2);border:1px solid var(--border)}
-.btn-ghost:hover{border-color:var(--ink);color:var(--ink)}
-.btn-danger{background:transparent;color:var(--wrong);border:1px solid #fca5a5}
-.btn-sm{padding:7px 14px;font-size:.8rem}
+.card{
+  background:var(--card);
+  border-radius:12px;
+  padding:20px;
+  margin-bottom:15px;
+  box-shadow:0 5px 15px rgba(0,0,0,.3);
+}
 
-/* TEACHER LAYOUT */
-.teacher-layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 57px)}
-@media(max-width:768px){.teacher-layout{grid-template-columns:1fr}}
-.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:20px;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto}
-.sidebar h4{font-size:.72rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;padding-left:8px}
-.class-group{margin-bottom:4px}
-.class-group-header{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.88rem;color:var(--ink2);transition:background .15s;user-select:none}
-.class-group-header:hover{background:var(--bg2)}
-.class-group-header .arrow{margin-left:auto;font-size:.7rem;transition:transform .2s}
-.class-group.open .arrow{transform:rotate(90deg)}
-.branch-list{display:none;padding-left:16px;margin-top:2px}
-.class-group.open .branch-list{display:block}
-.branch-btn{display:block;width:100%;text-align:left;padding:7px 10px;border-radius:6px;background:transparent;border:none;cursor:pointer;font-family:inherit;font-size:.85rem;color:var(--ink3);transition:all .15s}
-.branch-btn:hover{background:var(--bg2);color:var(--ink)}
-.branch-btn.active{background:var(--accent);color:#fff;font-weight:600}
-.panel-main{padding:28px 32px;background:var(--bg);overflow-y:auto}
+button{
+  padding:10px 16px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  background:var(--primary);
+  color:#fff;
+  font-weight:bold;
+}
 
-.tabs{display:flex;gap:2px;background:var(--bg2);border-radius:10px;padding:3px;margin-bottom:24px;width:fit-content}
-.tab-btn{padding:8px 18px;border-radius:8px;border:none;background:transparent;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:.85rem;color:var(--ink3);cursor:pointer;transition:all .18s}
-.tab-btn.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+button.secondary{background:#475569}
+button.danger{background:var(--danger)}
 
-/* QUIZ CARDS */
-.quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;margin-bottom:12px}
-.quiz-card-info{flex:1;min-width:0}
-.quiz-card-name{font-weight:700;font-size:.95rem}
-.quiz-card-meta{color:var(--ink3);font-size:.8rem;margin-top:3px}
+input{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  margin-top:10px;
+}
 
-/* UPLOAD ZONE */
-.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .25s;position:relative;background:var(--bg)}
-.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(200,64,26,.04)}
-.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.file-badge{display:none;align-items:center;gap:10px;margin-top:12px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:8px;padding:10px 14px;font-size:.85rem;color:var(--correct)}
-.file-badge.show{display:flex}
+.hidden{display:none}
 
-/* QUESTION CARD */
-.question-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;margin-bottom:18px;box-shadow:var(--shadow)}
-.q-label{font-size:.72rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
-.q-text{font-size:1.06rem;font-weight:500;line-height:1.65;margin-bottom:22px}
-.option-row{display:flex;align-items:center;gap:12px;padding:12px 15px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .18s;background:var(--bg);font-size:.92rem;margin-bottom:8px}
-.option-row:hover{border-color:var(--accent2);background:rgba(37,99,200,.04)}
-.option-row.sel{border-color:var(--accent2);background:rgba(37,99,200,.1)}
-.opt-ltr{width:30px;height:30px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0}
+.option{
+  padding:12px;
+  background:var(--secondary);
+  border-radius:8px;
+  margin:6px 0;
+  cursor:pointer;
+  transition:.2s;
+}
 
-/* RESULT RING */
-.result-ring-wrap{display:flex;justify-content:center;margin-bottom:24px}
-.ring-container{position:relative;width:140px;height:140px}
-.ring-container svg{transform:rotate(-90deg)}
-.ring-bg{fill:none;stroke:var(--border);stroke-width:14}
-.ring-fg{fill:none;stroke:var(--accent);stroke-width:14;stroke-linecap:round;transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)}
-.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.ring-pct{font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;font-weight:800;line-height:1}
+.option:hover{background:#475569}
 
-/* UTILS */
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--ink);color:#fff;border-radius:10px;padding:12px 22px;font-size:.88rem;opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;pointer-events:none}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.loader{position:fixed;inset:0;background:rgba(245,243,238,.85);z-index:888;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;backdrop-filter:blur(4px)}
-.loader.show{display:flex}
-.spin{width:46px;height:46px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+.option.selected{background:var(--primary)}
+
+#timer{
+  font-size:18px;
+  margin-bottom:10px;
+}
+
+.progress{
+  height:8px;
+  background:#1e293b;
+  border-radius:10px;
+  overflow:hidden;
+  margin-bottom:15px;
+}
+
+.progress-bar{
+  height:100%;
+  background:var(--primary);
+  width:0%;
+  transition:.3s;
+}
+
+.stat{
+  display:flex;
+  justify-content:space-between;
+  margin:6px 0;
+}
+
+.small{
+  font-size:13px;
+  opacity:.7;
+}
+
 </style>
 </head>
+
 <body>
+<div class="container">
 
-<div class="loader" id="loader"><div class="spin"></div><p id="loader-txt">Yukleniyor...</p></div>
-<div class="toast" id="toast"></div>
-
-<div id="app">
-<nav>
-  <div class="brand">Edu<span>Quiz</span></div>
-  <div class="nav-right">
-    <div id="timer-widget">⏱ <span id="timer-txt">00:00</span></div>
-    <button class="btn btn-ghost btn-sm" id="nav-back" style="display:none" onclick="goHome()">← Ana Sayfa</button>
-  </div>
-</nav>
-
-<div class="screen active" id="s-setup">
-  <div class="setup-wrap">
-    <div class="setup-card">
-      <div style="font-size:2.5rem;margin-bottom:12px">⚙️</div>
-      <h2>Ilk Kurulum</h2>
-      <p>Veritabanini kurmak icin <strong>Supabase</strong> bilgilerinizi girin.</p>
-      <div class="setup-step">
-        <div class="step-num">!</div>
-        <div class="step-body">
-          <h4>SQL Editor Komutu</h4>
-          <div class="sql-block">create table quizzes (
-  id uuid default gen_random_uuid() primary key,
-  class_id text not null,
-  branch text not null,
-  name text not null,
-  time_limit integer default 0,
-  questions jsonb not null default '[]',
-  created_at timestamptz default now()
-);</div>
-        </div>
-      </div>
-      <div class="field"><label>Supabase Project URL</label><input type="text" id="setup-url" placeholder="https://xxx.supabase.co" /></div>
-      <div class="field"><label>Supabase Anon Key</label><input type="text" id="setup-key" placeholder="eyJhbGci..." /></div>
-      <div class="field"><label>Ogretmen Sifresi</label><input type="password" id="setup-pw" value="1234" /></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveSetup()">✓ Kurulumu Tamamla</button>
-    </div>
-  </div>
+<!-- LOGIN -->
+<div id="login" class="card">
+<h2>Giriş</h2>
+<input id="name" placeholder="Ad Soyad">
+<button onclick="App.start()">Başla</button>
 </div>
 
-<div class="screen" id="s-landing">
-  <div style="padding:80px 20px 50px; text-align:center" class="landing-hero">
-    <h1>Online Sinav<br><em>Platformu</em></h1>
-    <p>Tum siniflar ve subeler icin merkezi sinav yonetimi.</p>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:20px;max-width:600px;margin:0 auto;padding:20px">
-    <div style="background:var(--surface);border:2px solid var(--border);border-radius:20px;padding:32px;cursor:pointer;text-align:center" onclick="showScreen('s-teacher-pw')">
-      <span style="font-size:3rem;display:block;margin-bottom:12px">👩‍🏫</span><h3>Ogretmen</h3><p>Sinav olustur ve yonet</p>
-    </div>
-    <div style="background:var(--surface);border:2px solid var(--border);border-radius:20px;padding:32px;cursor:pointer;text-align:center" onclick="initStudentGrid()">
-      <span style="font-size:3rem;display:block;margin-bottom:12px">🎓</span><h3>Ogrenci</h3><p>Sinifini sec, sinava gir</p>
-    </div>
-  </div>
-  <div style="text-align:center;margin-top:20px"><button class="btn btn-ghost btn-sm" onclick="resetSetup()">⚙ Baglanti Ayarlari</button></div>
+<!-- QUIZ -->
+<div id="quiz" class="hidden">
+<div id="timer"></div>
+<div class="progress"><div id="bar" class="progress-bar"></div></div>
+
+<div class="card">
+<h3 id="qText"></h3>
+<div id="options"></div>
 </div>
 
-<div class="screen" id="s-teacher-pw">
-  <div style="max-width:360px;margin:80px auto;text-align:center;padding:20px">
-    <div style="font-size:2.5rem;margin-bottom:14px">🔒</div>
-    <h2>Ogretmen Girisi</h2>
-    <div class="field" style="margin-top:20px"><input type="password" id="pw-input" placeholder="Sifre" onkeydown="if(event.key==='Enter')checkPw()" /></div>
-    <button class="btn btn-primary" style="width:100%" onclick="checkPw()">Giris</button>
-    <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="showScreen('s-landing')">← Geri</button>
-  </div>
+<div style="display:flex;gap:10px">
+<button class="secondary" onclick="App.prev()">Geri</button>
+<button onclick="App.next()">İleri</button>
+</div>
 </div>
 
-<div class="screen" id="s-teacher">
-  <div class="teacher-layout">
-    <div class="sidebar" id="teacher-sidebar"></div>
-    <div class="panel-main" id="teacher-main">
-      <div style="text-align:center;padding:50px;color:var(--ink3)">👈 Sol menuden bir sinif ve sube secin.</div>
-    </div>
-  </div>
+<!-- RESULT -->
+<div id="result" class="hidden card">
+<h2>Sonuç</h2>
+<p id="score"></p>
+
+<div class="stat"><span>Doğru</span><span id="correct"></span></div>
+<div class="stat"><span>Yanlış</span><span id="wrong"></span></div>
+<div class="stat"><span>Boş</span><span id="blank"></span></div>
+
+<p id="analysis" class="small"></p>
+
+<button onclick="location.reload()">Yeniden Başla</button>
 </div>
 
-<div class="screen" id="s-student-select">
-  <div style="max-width:800px;margin:40px auto;padding:20px">
-    <h2>Sinifini Sec</h2>
-    <div id="student-class-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;margin-top:20px"></div>
-    <button class="btn btn-ghost" style="margin-top:20px" onclick="showScreen('s-landing')">← Geri</button>
-  </div>
-</div>
-
-<div class="screen" id="s-student-quizlist">
-  <div style="max-width:800px;margin:40px auto;padding:20px">
-    <h2 id="student-ql-title"></h2>
-    <div id="student-quiz-list" style="margin-top:20px"></div>
-    <button class="btn btn-ghost" style="margin-top:20px" onclick="showScreen('s-student-select')">← Geri</button>
-  </div>
-</div>
-
-<div class="screen" id="s-quiz">
-  <div style="max-width:800px;margin:0 auto;padding:40px 20px">
-    <div id="name-field-wrap" style="background:white;padding:30px;border-radius:20px;border:1px solid var(--border)">
-      <h3>👋 Adinizi girin</h3>
-      <input type="text" id="student-name-input" style="width:100%;padding:12px;margin:20px 0;border-radius:8px;border:1px solid var(--border)" placeholder="Ad Soyad" />
-      <button class="btn btn-primary" style="width:100%" onclick="confirmName()">Sinava Basla</button>
-    </div>
-    <div id="quiz-body" style="display:none">
-      <div id="q-card-area"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
-        <button class="btn btn-ghost" id="q-prev-btn" onclick="qNav(-1)">← Onceki</button>
-        <span id="q-counter" style="color:var(--ink3)"></span>
-        <button class="btn btn-primary" id="q-next-btn" onclick="qNav(1)">Sonraki →</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="screen" id="s-result">
-  <div style="max-width:600px;margin:40px auto;padding:20px;text-align:center">
-    <div class="result-ring-wrap">
-      <div class="ring-container">
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <circle class="ring-bg" cx="70" cy="70" r="56"/>
-          <circle class="ring-fg" id="ring-fg" cx="70" cy="70" r="56" stroke-dasharray="351.9" stroke-dashoffset="351.9"/>
-        </svg>
-        <div class="ring-center"><div class="ring-pct" id="r-pct">0%</div></div>
-      </div>
-    </div>
-    <h2 id="r-title">Tebrikler!</h2>
-    <p id="r-sub" style="color:var(--ink3);margin-bottom:30px"></p>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:30px 0">
-      <div style="background:white;padding:15px;border-radius:12px;border:1px solid var(--border)"><div style="color:var(--correct);font-weight:800;font-size:1.5rem" id="r-correct">0</div><div>Dogru</div></div>
-      <div style="background:white;padding:15px;border-radius:12px;border:1px solid var(--border)"><div style="color:var(--wrong);font-weight:800;font-size:1.5rem" id="r-wrong">0</div><div>Yanlis</div></div>
-      <div style="background:white;padding:15px;border-radius:12px;border:1px solid var(--border)"><div style="font-weight:800;font-size:1.5rem" id="r-blank">0</div><div>Bos</div></div>
-    </div>
-    <button class="btn btn-primary" onclick="goHome()">Ana Sayfaya Don</button>
-  </div>
-</div>
 </div>
 
 <script>
-// --- CONFIG ---
-const CLASS_DEFS = [
-  {id:'6', label:'6. Sinif', icon:'📗'}, {id:'7', label:'7. Sinif', icon:'📘'},
-  {id:'8', label:'8. Sinif', icon:'📙'}, {id:'9', label:'9. Sinif', icon:'📕'},
-  {id:'10', label:'10. Sinif', icon:'📓'}, {id:'11', label:'11. Sinif', icon:'📒'},
-  {id:'12', label:'12. Sinif', icon:'📔'}, {id:'mezEA', label:'Mezun-EA', icon:'🎓'},
-  {id:'mezSAY', label:'Mezun-SAY', icon:'🎓'}, {id:'kpss', label:'KPSS', icon:'🏛'}
-];
-const BRANCHES = ['A','B','C'];
-const LETTERS = ['A','B','C','D','E'];
+/* ================= CONFIG ================= */
+const CONFIG = {
+  SUPABASE_URL: "YOUR_URL",
+  SUPABASE_KEY: "YOUR_KEY"
+};
 
-let activeClassId=null, activeBranch=null, teacherTab='quizzes';
-let editingQuizId=null, draftQuestions=[], manualCount=0, pdfB64=null, txtContent=null;
-let currentQuiz=null, quizAnswers={}, currentQIdx=0, studentName='';
-let timerInt=null, timeLeft=0;
+/* ================= CORE APP ================= */
+const App = {
 
-// --- UTILS ---
-function getSettings(){ try{return JSON.parse(localStorage.getItem('eduquiz_settings'))||{};}catch(e){return{};} }
-function saveSettings(s){ localStorage.setItem('eduquiz_settings', JSON.stringify(s)); }
-function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
-function showLoader(txt){ document.getElementById('loader-txt').textContent=txt; document.getElementById('loader').classList.add('show'); }
-function hideLoader(){ document.getElementById('loader').classList.remove('show'); }
+  state:{
+    user:"",
+    questions:[],
+    index:0,
+    answers:[],
+    timer:null,
+    timeLeft:600
+  },
 
-// --- API ---
-async function sbFetch(path, opts={}){
-  const s = getSettings();
-  const res = await fetch(s.supabaseUrl + '/rest/v1/' + path, {
-    ...opts,
-    headers: {
-      'apikey': s.supabaseKey,
-      'Authorization': 'Bearer ' + s.supabaseKey,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...(opts.headers || {})
+  init(){
+    this.supabase = window.supabase.createClient(
+      CONFIG.SUPABASE_URL,
+      CONFIG.SUPABASE_KEY
+    );
+
+    this.loadQuestions();
+  },
+
+  loadQuestions(){
+    this.state.questions = [
+      {q:"Türkiye'nin başkenti?",a:["İstanbul","Ankara","İzmir","Bursa"],c:1,topic:"şehir"},
+      {q:"En büyük okyanus?",a:["Atlas","Hint","Pasifik","Arktik"],c:2,topic:"coğrafya"},
+      {q:"İklim elemanı değildir?",a:["Sıcaklık","Basınç","Nüfus","Yağış"],c:2,topic:"iklim"},
+      {q:"Dünya'nın şekli?",a:["Düz","Küre","Silindir","Üçgen"],c:1,topic:"genel"}
+    ];
+  },
+
+  start(){
+    const name = document.getElementById('name').value.trim();
+    if(!name) return alert("Ad gir");
+
+    this.state.user = name;
+
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('quiz').classList.remove('hidden');
+
+    this.startTimer();
+    this.render();
+  },
+
+  render(){
+    const q = this.state.questions[this.state.index];
+
+    document.getElementById('qText').innerText = q.q;
+
+    const box = document.getElementById('options');
+    box.innerHTML="";
+
+    q.a.forEach((opt,i)=>{
+      const div = document.createElement('div');
+      div.className="option";
+      div.innerText=opt;
+
+      if(this.state.answers[this.state.index]===i){
+        div.classList.add('selected');
+      }
+
+      div.onclick=()=>this.select(i);
+      box.appendChild(div);
+    });
+
+    this.updateBar();
+  },
+
+  select(i){
+    this.state.answers[this.state.index]=i;
+    this.render();
+  },
+
+  next(){
+    if(this.state.index < this.state.questions.length-1){
+      this.state.index++;
+      this.render();
+    }else{
+      this.finish();
     }
-  });
-  if(!res.ok) throw new Error(await res.text());
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-}
+  },
 
-// --- NAVIGATION ---
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
-  document.getElementById('nav-back').style.display = (id==='s-landing'||id==='s-setup') ? 'none' : 'flex';
-}
-function goHome(){ clearInterval(timerInt); document.getElementById('timer-widget').style.display='none'; showScreen('s-landing'); }
+  prev(){
+    if(this.state.index>0){
+      this.state.index--;
+      this.render();
+    }
+  },
 
-// --- SETUP ---
-function saveSetup(){
-  const url = document.getElementById('setup-url').value.trim();
-  const key = document.getElementById('setup-key').value.trim();
-  const pw = document.getElementById('setup-pw').value.trim();
-  if(!url || !key) { showToast('⚠️ Bilgileri eksiksiz girin!'); return; }
-  saveSettings({supabaseUrl:url, supabaseKey:key, password:pw});
-  initApp();
-}
-function resetSetup(){ if(confirm('Ayarlar sifirlansin mi?')){ localStorage.removeItem('eduquiz_settings'); location.reload(); } }
+  startTimer(){
+    this.state.timer = setInterval(()=>{
+      this.state.timeLeft--;
 
-// --- TEACHER ---
-function checkPw(){
-  if(document.getElementById('pw-input').value === (getSettings().password || '1234')) {
-    showScreen('s-teacher'); renderTeacherSidebar();
-  } else { showToast('❌ Yanlis sifre!'); }
-}
+      const m = Math.floor(this.state.timeLeft/60);
+      const s = this.state.timeLeft%60;
 
-function renderTeacherSidebar(){
-  const sb = document.getElementById('teacher-sidebar');
-  sb.innerHTML = '<h4>Siniflar & Subeler</h4>';
-  CLASS_DEFS.forEach(cls=>{
-    const div = document.createElement('div');
-    div.className = 'class-group';
-    div.innerHTML = `
-      <div class="class-group-header" onclick="this.parentElement.classList.toggle('open')">
-        <span>${cls.icon}</span><span>${cls.label}</span><span class="arrow">▶</span>
-      </div>
-      <div class="branch-list">${BRANCHES.map(b=>`<button class="branch-btn" id="bb-${cls.id}-${b}" onclick="selectBranch('${cls.id}','${b}')">${b} Subesi</button>`).join('')}</div>`;
-    sb.appendChild(div);
-  });
-}
+      document.getElementById('timer').innerText =
+        `${m}:${s<10?'0':''}${s}`;
 
-function selectBranch(cid, b){
-  activeClassId=cid; activeBranch=b; teacherTab='quizzes';
-  document.querySelectorAll('.branch-btn').forEach(btn=>btn.classList.remove('active'));
-  document.getElementById(`bb-${cid}-${b}`)?.classList.add('active');
-  renderTeacherPanel();
-}
+      if(this.state.timeLeft<=0){
+        clearInterval(this.state.timer);
+        this.finish();
+      }
+    },1000);
+  },
 
-function renderTeacherPanel(){
-  const cls = CLASS_DEFS.find(c=>c.id===activeClassId);
-  document.getElementById('teacher-main').innerHTML = `
-    <h2>${cls.label} - ${activeBranch} Subesi</h2>
-    <div class="tabs"><button class="tab-btn active" id="t-list" onclick="renderTab('quizzes')">Sinavlar</button><button class="tab-btn" id="t-new" onclick="renderTab('new')">+ Yeni Sinav</button></div>
-    <div id="tab-body"></div>`;
-  renderTab('quizzes');
-}
+  calculate(){
+    let correct=0, blank=0;
 
-async function renderTab(t){
-  teacherTab = t;
-  document.getElementById('t-list').classList.toggle('active', t==='quizzes');
-  document.getElementById('t-new').classList.toggle('active', t==='new');
-  const body = document.getElementById('tab-body');
-  if(t==='quizzes'){
-    body.innerHTML = 'Yukleniyor...';
-    try {
-      const qs = await sbFetch(`quizzes?class_id=eq.${activeClassId}&branch=eq.${activeBranch}&order=created_at.asc`);
-      body.innerHTML = qs.length ? qs.map(q=>`<div class="quiz-card"><div class="quiz-card-info"><div class="quiz-card-name">${q.name}</div><div class="quiz-card-meta">${q.questions.length} soru</div></div><button class="btn btn-danger btn-sm" onclick="deleteQuiz('${q.id}')">Sil</button></div>`).join('') : 'Henuz sinav yok.';
-    } catch(e) { body.innerHTML = 'Hata oluştu.'; }
-  } else {
-    draftQuestions=[]; manualCount=0;
-    body.innerHTML = `
-      <div style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
-        <div class="field"><label>Sinav Adi</label><input type="text" id="q-name" placeholder="Or: Matematik Deneme" /></div>
-        <div class="field"><label>Sure (Dakika)</label><input type="number" id="q-time" value="20" /></div>
-      </div>
-      <div style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
-        <h4>🤖 AI ile Soru Cikar</h4>
-        <div class="upload-zone" style="margin:15px 0"><input type="file" id="f-inp" onchange="handleFile(this)" /><p>PDF veya TXT yukle</p></div>
-        <div id="f-info" class="file-badge"></div>
-        <button class="btn btn-primary" style="width:100%" onclick="extractFromFile()">AI Analizini Baslat</button>
-      </div>
-      <div style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
-        <h4>✏️ Manuel Soru Ekle</h4>
-        <div id="m-area"></div><button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="addManualQ()">+ Soru Ekle</button>
-      </div>
-      <div id="d-list"></div>
-      <button class="btn btn-primary" style="width:100%;margin-top:20px;justify-content:center" onclick="saveQuiz()">💾 Sinavi Kaydet</button>`;
+    this.state.questions.forEach((q,i)=>{
+      const a = this.state.answers[i];
+      if(a===undefined) blank++;
+      else if(a===q.c) correct++;
+    });
+
+    const total = this.state.questions.length;
+    const wrong = total - correct - blank;
+    const score = Math.round((correct/total)*100);
+
+    return {correct,wrong,blank,score};
+  },
+
+  analyze(){
+    const map={};
+
+    this.state.questions.forEach((q,i)=>{
+      if(!map[q.topic]) map[q.topic]={t:0,c:0};
+
+      map[q.topic].t++;
+
+      if(this.state.answers[i]===q.c){
+        map[q.topic].c++;
+      }
+    });
+
+    let worst = "";
+    let min = 1;
+
+    Object.entries(map).forEach(([k,v])=>{
+      const rate = v.c/v.t;
+      if(rate < min){
+        min = rate;
+        worst = k;
+      }
+    });
+
+    return `En zayıf konun: ${worst}`;
+  },
+
+  async finish(){
+    clearInterval(this.state.timer);
+
+    const r = this.calculate();
+
+    document.getElementById('quiz').classList.add('hidden');
+    document.getElementById('result').classList.remove('hidden');
+
+    document.getElementById('score').innerText = "Puan: "+r.score;
+    document.getElementById('correct').innerText = r.correct;
+    document.getElementById('wrong').innerText = r.wrong;
+    document.getElementById('blank').innerText = r.blank;
+
+    document.getElementById('analysis').innerText = this.analyze();
+
+    await this.saveResult(r);
+  },
+
+  async saveResult(r){
+    try{
+      await this.supabase.from('results').insert([{
+        student_name:this.state.user,
+        ...r
+      }]);
+    }catch(e){
+      console.error("DB hata:",e);
+    }
+  },
+
+  updateBar(){
+    const pct = ((this.state.index+1)/this.state.questions.length)*100;
+    document.getElementById('bar').style.width = pct+"%";
   }
-}
 
-async function deleteQuiz(id){ if(confirm('Silinsin mi?')){ await sbFetch(`quizzes?id=eq.${id}`, {method:'DELETE'}); renderTab('quizzes'); } }
+};
 
-function handleFile(input){
-  const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    if(file.name.toLowerCase().endsWith('.pdf')) pdfB64 = e.target.result.split(',')[1];
-    else txtContent = e.target.result;
-    const badge = document.getElementById('f-info');
-    badge.textContent = "✅ " + file.name; badge.classList.add('show');
-  };
-  if(file.name.toLowerCase().endsWith('.pdf')) reader.readAsDataURL(file);
-  else reader.readAsText(file);
-}
-
-async function extractFromFile(){
-  if(!pdfB64 && !txtContent) { showToast('⚠️ Dosya secin!'); return; }
-  showLoader('Gemini AI analiz ediyor...');
-  try { const qs = await callAI(); draftQuestions = [...draftQuestions, ...qs]; renderDrafts(); showToast(`✅ ${qs.length} soru eklendi!`); }
-  catch(e) { showToast('Hata: ' + e.message); }
-  finally { hideLoader(); }
-}
-
-async function callAI(){
-  let apiKey = localStorage.getItem('gemini_api_key');
-  if(!apiKey){
-    apiKey = prompt("Google Gemini API Key girin:\n(aistudio.google.com adresinden alabilirsiniz)");
-    if(!apiKey) throw new Error("API Key gerekli.");
-    localStorage.setItem('gemini_api_key', apiKey.trim());
-  }
-  const parts = [{text: "PDF/Metinden sorulari ayikla. SADECE JSON dondur: [{\"text\":\"\",\"options\":[\"\",\"\",\"\",\"\"],\"correct\":0,\"explanation\":\"\"}]"}];
-  if(pdfB64) parts.push({inlineData: {mimeType: "application/pdf", data: pdfB64}});
-  else parts.push({text: txtContent});
-
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({contents: [{parts: parts}], generationConfig: {responseMimeType: "application/json"}})
-  });
-  if(!res.ok) throw new Error("API Hatasi.");
-  const data = await res.json();
-  const raw = data.candidates[0].content.parts[0].text;
-  return JSON.parse(raw.replace(/```json|```/g, '').trim());
-}
-
-function addManualQ(){
-  manualCount++;
-  const div = document.createElement('div');
-  div.className = 'manual-q-editor'; div.id = `mqe-${manualCount}`;
-  div.innerHTML = `<textarea id="mqt-${manualCount}" placeholder="Soru metni..."></textarea>
-    <div class="opts-2col">${['a','b','c','d'].map(l=>`<input id="mq${l}-${manualCount}" placeholder="${l.toUpperCase()} şıkkı">`).join('')}</div>
-    <div class="inline-row"><span>Dogru:</span><select id="mqans-${manualCount}"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select><button class="btn btn-primary btn-sm" onclick="commitManual(${manualCount})">✓ Ekle</button></div>`;
-  document.getElementById('m-area').appendChild(div);
-}
-
-function commitManual(id){
-  const text = document.getElementById(`mqt-${id}`).value.trim();
-  const options = ['a','b','c','d'].map(l=>document.getElementById(`mq${l}-${id}`).value.trim()).filter(Boolean);
-  if(!text || options.length<2) { showToast('⚠️ Eksik bilgi!'); return; }
-  draftQuestions.push({text, options, correct: parseInt(document.getElementById(`mqans-${id}`).value)});
-  document.getElementById(`mqe-${id}`).remove();
-  renderDrafts();
-}
-
-function renderDrafts(){
-  document.getElementById('d-list').innerHTML = draftQuestions.map((q,i)=>`<div style="background:white;padding:15px;border-radius:12px;margin-bottom:10px;border:1px solid var(--border);display:flex;justify-content:space-between"><div><b>${i+1}.</b> ${q.text.substring(0,50)}...</div><button class="btn btn-danger btn-sm" onclick="draftQuestions.splice(${i},1);renderDrafts()">🗑</button></div>`).join('');
-}
-
-async function saveQuiz(){
-  const name = document.getElementById('q-name').value.trim();
-  if(!name || !draftQuestions.length) { showToast('⚠️ Bilgiler eksik!'); return; }
-  showLoader('Kaydediliyor...');
-  try {
-    await sbFetch('quizzes', {method:'POST', body: JSON.stringify({class_id:activeClassId, branch:activeBranch, name, time_limit: parseInt(document.getElementById('q-time').value), questions: draftQuestions})});
-    showToast('✅ Kaydedildi!'); renderTab('quizzes');
-  } catch(e) { showToast('Hata!'); }
-  finally { hideLoader(); }
-}
-
-// --- STUDENT ---
-function initStudentGrid(){
-  showScreen('s-student-select');
-  document.getElementById('student-class-grid').innerHTML = CLASS_DEFS.map(c=>`<div class="class-select-card" onclick="studentSelectBranch('${c.id}')"><div style="font-size:2rem;margin-bottom:10px">${c.icon}</div><h4>${c.label}</h4></div>`).join('');
-}
-function studentSelectBranch(cid){
-  activeClassId=cid;
-  document.getElementById('student-class-grid').innerHTML = BRANCHES.map(b=>`<div class="class-select-card" onclick="loadQuizzes('${cid}','${b}')"><h4>${b} Subesi</h4></div>`).join('') + `<button class="btn btn-ghost" style="grid-column:1/-1" onclick="initStudentGrid()">← Geri</button>`;
-}
-async function loadQuizzes(cid, b){
-  showScreen('s-student-quizlist');
-  document.getElementById('student-ql-title').textContent = `${cid}. Sinif — ${b} Subesi`;
-  const list = document.getElementById('student-quiz-list');
-  list.innerHTML = '<div class="spin"></div>';
-  try {
-    const qs = await sbFetch(`quizzes?class_id=eq.${cid}&branch=eq.${b}`);
-    list.innerHTML = qs.length ? qs.map(q=>`<div class="quiz-card" style="cursor:pointer" onclick="startQuiz('${q.id}')"><div class="quiz-card-info"><h4>${q.name}</h4><p>${q.questions.length} soru · ${q.time_limit} dk</p></div><button class="btn btn-primary btn-sm">Basla</button></div>`).join('') : 'Sinav yok.';
-    window._ql = qs;
-  } catch(e) { list.innerHTML = 'Hata.'; }
-}
-
-function startQuiz(id){
-  currentQuiz = window._ql.find(q=>q.id===id);
-  currentQIdx=0; quizAnswers={}; showScreen('s-quiz');
-}
-
-function confirmName(){
-  const n = document.getElementById('student-name-input').value.trim();
-  if(!n) { showToast('⚠️ Adinizi girin!'); return; }
-  studentName = n;
-  document.getElementById('name-field-wrap').style.display='none';
-  document.getElementById('quiz-body').style.display='block';
-  if(currentQuiz.time_limit > 0) { timeLeft = currentQuiz.time_limit * 60; startTimer(); }
-  renderQ();
-}
-
-function startTimer(){
-  const w = document.getElementById('timer-widget'); w.style.display='flex';
-  timerInt = setInterval(()=>{
-    timeLeft--;
-    const m = Math.floor(timeLeft/60), s = timeLeft%60;
-    document.getElementById('timer-txt').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    if(timeLeft<=0) { clearInterval(timerInt); finishQuiz(); }
-  },1000);
-}
-
-function renderQ(){
-  const q = currentQuiz.questions[currentQIdx];
-  document.getElementById('q-counter').textContent = `${currentQIdx+1} / ${currentQuiz.questions.length}`;
-  document.getElementById('q-card-area').innerHTML = `
-    <div class="question-card">
-      <div class="q-label">SORU ${currentQIdx+1}</div>
-      <div class="q-text">${q.text}</div>
-      <div id="opts-area">
-        ${q.options.map((o,i)=>`<div class="option-row ${quizAnswers[currentQIdx]===i?'sel':''}" onclick="pickAnswer(${i})"><div class="opt-ltr">${LETTERS[i]}</div><span>${o}</span></div>`).join('')}
-      </div>
-    </div>`;
-  document.getElementById('q-next-btn').textContent = (currentQIdx === currentQuiz.questions.length-1) ? '✓ Bitir' : 'Sonraki →';
-}
-
-function pickAnswer(i){ quizAnswers[currentQIdx]=i; renderQ(); }
-function qNav(d){
-  if(currentQIdx+d >= currentQuiz.questions.length) { if(confirm('Bitirilsin mi?')) finishQuiz(); }
-  else if(currentQIdx+d >= 0) { currentQIdx+=d; renderQ(); }
-}
-
-function finishQuiz(){
-  clearInterval(timerInt); document.getElementById('timer-widget').style.display='none';
-  let c=0, w=0, b=0;
-  currentQuiz.questions.forEach((q,i)=>{
-    if(quizAnswers[i]===undefined) b++;
-    else if(quizAnswers[i]===q.correct) c++;
-    else w++;
-  });
-  const pct = Math.round((c/currentQuiz.questions.length)*100);
-  document.getElementById('r-pct').textContent = pct + '%';
-  document.getElementById('r-correct').textContent = c;
-  document.getElementById('r-wrong').textContent = w;
-  document.getElementById('r-blank').textContent = b;
-  document.getElementById('r-sub').textContent = `${studentName}, sinavi bitirdin!`;
-  showScreen('s-result');
-  setTimeout(()=>{ document.getElementById('ring-fg').style.strokeDashoffset = 351.9 - (pct/100)*351.9; }, 100);
-}
-
-function initApp(){
-  const s = getSettings();
-  if(s.supabaseUrl && s.supabaseKey) showScreen('s-landing');
-  else showScreen('s-setup');
-}
-
-initApp();
+App.init();
 </script>
 </body>
 </html>
+```
