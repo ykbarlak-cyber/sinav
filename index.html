@@ -303,20 +303,29 @@ function renderTeacherPanel(){
 function switchTab(t){ teacherTab=t; renderTeacherPanel(); }
 
 // --- YENİ EKLENEN ÖĞRENCİ YÖNETİMİ SEKMESİ ---
+// --- YENİ EKLENEN ÖĞRENCİ YÖNETİMİ SEKMESİ (TOPLU EKLEME GÜNCELLEMESİ) ---
 async function renderStudentsTab(){
   const tb = document.getElementById('tab-body');
   tb.innerHTML = `
-    <div class="card" style="background:#f8fafc; border:1px solid var(--primary);">
-      <h3 style="margin-top:0; color:var(--primary);">➕ Yeni Öğrenci Ekle</h3>
-      <div style="display:flex; gap:10px; align-items:flex-end;">
-        <div class="field" style="flex:2"><label>Öğrenci Adı Soyadı</label><input type="text" id="add-s-name" placeholder="Örn: Ahmet Yılmaz"></div>
-        <div class="field" style="flex:1"><label>Okul No</label><input type="text" id="add-s-no" placeholder="Örn: 1453"></div>
-        <div class="field" style="flex:1"><label>Şifre</label><input type="text" id="add-s-pw" placeholder="Örn: 12345"></div>
-        <button class="btn btn-primary" style="margin-bottom:6px;" onclick="addStudent()">Ekle</button>
+    <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+      <div class="card" style="flex:1; background:#f8fafc; border:1px solid var(--primary); min-width:300px;">
+        <h3 style="margin-top:0; color:var(--primary);">👤 Tekli Öğrenci Ekle</h3>
+        <div class="field"><label>Öğrenci Adı Soyadı</label><input type="text" id="add-s-name" placeholder="Örn: Ahmet Yılmaz"></div>
+        <div class="field"><label>Okul No</label><input type="text" id="add-s-no" placeholder="Örn: 1453"></div>
+        <div class="field"><label>Şifre</label><input type="text" id="add-s-pw" placeholder="Örn: 1234"></div>
+        <button class="btn btn-primary" style="margin-top:16px; width:100%;" onclick="addStudent()">Tekli Ekle</button>
+      </div>
+
+      <div class="card" style="flex:2; border:1px solid var(--correct); min-width:300px;">
+        <h3 style="margin-top:0; color:var(--correct);">📥 Excel'den Toplu Ekle (Kopyala-Yapıştır)</h3>
+        <p style="color:var(--ink3); font-size:0.9rem; margin-bottom:10px;">Excel'den 3 sütunu (<strong>Ad Soyad, Okul No, Şifre</strong>) yan yana seçip kopyalayın ve aşağıdaki kutuya yapıştırın.</p>
+        <textarea id="bulk-students-data" rows="5" placeholder="Ahmet Yılmaz    105    1234&#10;Ayşe Kaya       106    1234&#10;Mehmet Demir    107    1234" style="width:100%; padding:12px; border:1px dashed var(--correct); border-radius:8px; resize:vertical; font-family:monospace;"></textarea>
+        <button class="btn btn-excel" style="margin-top:16px; width:100%; font-size:1.1rem;" onclick="bulkAddStudents()">🚀 Yapıştırılanları Toplu Kaydet</button>
       </div>
     </div>
+
     <div class="card">
-      <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">📋 Sınıf Listesi</h3>
+      <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">📋 ${activeClassId}-${activeBranch} Sınıf Listesi</h3>
       <div id="student-list-area"><div class="spin" style="margin:20px auto"></div></div>
     </div>`;
   loadStudentList();
@@ -342,24 +351,47 @@ async function addStudent() {
   } catch(e) { showToast('❌ Hata! Bu numara başka birine ait olabilir.'); } finally { hideLoader(); }
 }
 
+async function bulkAddStudents() {
+  const rawData = document.getElementById('bulk-students-data').value.trim();
+  if(!rawData) return showToast('⚠️ Lütfen önce Excelden kopyaladığınız veriyi kutuya yapıştırın.');
+  
+  const lines = rawData.split('\\n');
+  const newStudents = [];
+  
+  for(let line of lines) {
+    const parts = line.split('\\t'); // Excel'den kopyalanan hücreleri (Tab boşluğunu) algılar
+    if(parts.length >= 3) {
+      newStudents.push({
+        name: parts[0].trim(),
+        student_number: parts[1].trim(),
+        password: parts[2].trim(),
+        class_id: activeClassId,
+        branch: activeBranch
+      });
+    }
+  }
+  
+  if(newStudents.length === 0) return showToast('❌ Geçerli veri bulunamadı. Excelde Ad, No, Şifre yan yana olmalıdır.');
+  
+  showLoader(newStudents.length + ' Öğrenci Sisteme Yükleniyor...');
+  try {
+    // Supabase tek seferde toplu liste kaydetmeye izin verir!
+    await sbFetch('students', { method: 'POST', body: JSON.stringify(newStudents) });
+    showToast('🎉 ' + newStudents.length + ' Öğrenci Başarıyla Eklendi!');
+    document.getElementById('bulk-students-data').value = '';
+    loadStudentList();
+  } catch(e) {
+    showToast('❌ Kayıt hatası! Listede daha önceden kayıtlı bir numara olabilir.');
+  } finally {
+    hideLoader();
+  }
+}
+
 async function deleteStudent(id) {
   if(!confirm('Öğrenciyi silmek istediğinize emin misiniz?')) return; showLoader('Siliniyor...');
   try { await sbFetch(`students?id=eq.${id}`, { method: 'DELETE' }); loadStudentList(); showToast('Silindi.'); } catch(e) { showToast('Hata'); } finally { hideLoader(); }
 }
 // ----------------------------------------------
-
-async function renderStatsTab(){
-  const tb = document.getElementById('tab-body'); tb.innerHTML = '<div class="spin" style="margin:40px auto"></div>';
-  try {
-    const teachers = await sbFetch('teachers?order=last_login.desc.nullslast'); const quizzes = await sbFetch('quizzes?select=id,teacher_name');
-    let html = `<div class="card"><h3>📊 Personel Aktiviteleri</h3><div style="overflow-x:auto;"><table><tr><th>Öğretmen Adı</th><th>Oluşturduğu Sınav</th><th>Son Giriş Tarihi</th></tr>`;
-    teachers.forEach(t => {
-      const qCount = quizzes ? quizzes.filter(q => q.teacher_name === t.name).length : 0;
-      let loginDateStr = 'Sisteme hiç girmedi'; if(t.last_login) { const d = new Date(t.last_login); loginDateStr = d.toLocaleDateString('tr-TR') + ' - ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}); }
-      html += `<tr><td><strong>${t.name}</strong></td><td><span style="background:#e0e7ff; color:var(--primary); padding:6px 14px; border-radius:20px; font-weight:800;">${qCount}</span></td><td style="color:var(--ink3);">${loginDateStr}</td></tr>`;
-    }); html += `</table></div></div>`; tb.innerHTML = html;
-  } catch(e) { tb.innerHTML=`<div class="card"><p>Hata</p></div>`; }
-}
 
 async function renderQuizListTab(){
   const tb=document.getElementById('tab-body'); tb.innerHTML='<div class="spin" style="margin:40px auto"></div>';
