@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Online Sınav Platformu V2</title>
+<title>Online Sınav Platformu V3</title>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
   :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc; --ink: #0f172a; --ink3: #64748b; --border: #e2e8f0; --correct: #22c55e; --wrong: #ef4444; --warning: #f59e0b; }
@@ -15,6 +15,8 @@
   .btn-ghost { background: transparent; color: var(--ink3); border: 1px solid var(--border); }
   .btn-secondary { background: #e2e8f0; color: var(--ink); }
   .btn-danger { background: #fee2e2; color: #b91c1c; }
+  .btn-ai { background: #8b5cf6; color: white; transition: 0.2s; }
+  .btn-ai:hover { background: #7c3aed; }
   .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
   .field input, .field select, .field textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; box-sizing: border-box; }
   .card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px; }
@@ -42,6 +44,10 @@
   .stat-num.r { color: var(--wrong); }
   .stat-num.b { color: var(--ink3); }
   #q-timer { font-weight: bold; color: var(--wrong); font-size: 1.2rem; background: #fee2e2; padding: 5px 15px; border-radius: 20px; display: none; }
+  
+  /* V3.0 YAPAY ZEKA KUTUSU */
+  .ai-box { background: #f3e8ff; border: 1px solid #d8b4fe; padding: 14px; border-radius: 8px; margin-top: 12px; font-size: 0.95rem; display: none; line-height: 1.5; color: #4c1d95; }
+  .ai-box.show { display: block; }
 </style>
 </head>
 <body>
@@ -261,7 +267,6 @@ async function extractFromFile(){
     const parts = []; if(pdfB64) parts.push({ inlineData: { mimeType: "application/pdf", data: pdfB64 } }); else parts.push({ text: txtContent });
     parts.push({ text: `Çoktan seçmeli soruları çıkar. SADECE JSON dizisi döndür: [{"text":"Soru","options":[${exampleOpts}],"correct":0}]` });
     
-    // MODELİ GEMINI-2.5-FLASH YAPTIK!
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { responseMimeType: "application/json" } })
@@ -289,7 +294,7 @@ async function saveQuiz(){
 }
 
 // ═══════════════════════════════════════════════
-// ÖĞRENCİ PANELİ VE YENİ ÖZELLİKLER (V2.0)
+// ÖĞRENCİ PANELİ VE YAPAY ZEKA DESTEĞİ (V3.0)
 // ═══════════════════════════════════════════════
 let currentQuiz=null, quizAnswers={}, currentQIdx=0, studentName='';
 let timerInterval = null, timeRemaining = 0;
@@ -308,7 +313,6 @@ async function openStudentQuizList(classId, branch, label){
 }
 
 function prepareStudentQuiz(quizId){ 
-  // Orijinal sınavı kopyalayıp öğrenciye özel karma yapacağız
   currentQuiz = JSON.parse(JSON.stringify(window._quizMap[quizId])); 
   quizAnswers={}; currentQIdx=0; 
   document.getElementById('student-name-input').value = localStorage.getItem('last_student_name') || ''; 
@@ -317,7 +321,6 @@ function prepareStudentQuiz(quizId){
   showScreen('s-quiz'); 
 }
 
-// DİZİ KARIŞTIRICI FONKSİYON (V2.0)
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; }
 }
@@ -326,21 +329,18 @@ async function confirmName(){
   studentName=document.getElementById('student-name-input').value.trim(); if(!studentName) return;
   showLoader('Hazırlanıyor...');
   
-  // V2.0: SORU VE ŞIKLARI KARIŞTIRMA SİSTEMİ
   currentQuiz.questions.forEach(q => {
-    // Şıkları doğru cevapla eşleştirip karıştırıyoruz
     let optsWithIndex = q.options.map((opt, idx) => ({text: opt, isCorrect: (idx === q.correct)}));
     shuffleArray(optsWithIndex);
     q.options = optsWithIndex.map(o => o.text);
-    q.correct = optsWithIndex.findIndex(o => o.isCorrect); // Yeni doğru şıkkın yerini bul
+    q.correct = optsWithIndex.findIndex(o => o.isCorrect); 
   });
-  shuffleArray(currentQuiz.questions); // Soruların sırasını da karıştır
+  shuffleArray(currentQuiz.questions); 
 
   hideLoader(); localStorage.setItem('last_student_name', studentName); 
   document.getElementById('name-field-wrap').style.display='none'; 
   document.getElementById('quiz-body').style.display='block'; 
 
-  // V2.0: SAYAÇ SİSTEMİ
   if (currentQuiz.time_limit && currentQuiz.time_limit > 0) {
     timeRemaining = currentQuiz.time_limit * 60;
     document.getElementById('q-timer').style.display = 'block';
@@ -373,7 +373,7 @@ async function finishQuiz(isTimeUp = false){
   const blank=currentQuiz.questions.length-Object.keys(quizAnswers).length; 
   if(!isTimeUp && blank>0 && !confirm(`${blank} boş var. Bitirilsin mi?`)) return;
   
-  if(timerInterval) clearInterval(timerInterval); // Sayacı durdur
+  if(timerInterval) clearInterval(timerInterval); 
   showLoader('Hesaplanıyor...'); let correct=0, wrong=0;
   
   currentQuiz.questions.forEach((q,i)=>{ if(quizAnswers[i]!==undefined) { if(quizAnswers[i]===q.correct) correct++; else wrong++; } });
@@ -386,12 +386,11 @@ async function finishQuiz(isTimeUp = false){
   document.getElementById('r-wrong').textContent = wrong; 
   document.getElementById('r-blank').textContent = blank; 
   
-  // V2.0: KONFETİ ŞOVU MANTIĞI
   let successRate = correct / currentQuiz.questions.length;
   if(successRate >= 0.8) {
     document.getElementById('r-title').textContent = 'Mükemmel! 🎉'; 
     document.getElementById('r-emoji').textContent = '🏆';
-    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }); // ŞOV BAŞLASIN
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
   } else {
     document.getElementById('r-title').textContent = 'Sınav Bitti'; 
     document.getElementById('r-emoji').textContent = '🎯';
@@ -403,10 +402,49 @@ async function finishQuiz(isTimeUp = false){
 function toggleReview(){
   const area = document.getElementById('review-area'); if(area.style.display==='block') { area.style.display='none'; return; }
   area.style.display='block'; const list=document.getElementById('review-list'); list.innerHTML='';
+  
   currentQuiz.questions.forEach((q,i)=>{
     const ua=quizAnswers[i]; let badge = ua===undefined?'⚪ Boş': ua===q.correct?'✅ Doğru': '❌ Yanlış';
-    list.innerHTML += `<div class="card" style="margin-bottom:10px"><div style="font-weight:bold; margin-bottom:8px;">${i+1}. Soru - ${badge}</div><div style="margin-bottom:12px;">${q.text}</div>${q.options.map((opt,j)=>{ let cls=''; if(j===q.correct) cls='ok'; else if(j===ua) cls='err'; return `<div class="option-row ${cls}"><strong>${LETTERS[j]}</strong> <span style="margin-left:8px">${opt}</span></div>`; }).join('')}</div>`;
+    
+    // V3.0 YAPAY ZEKA BUTONU
+    let aiButtonHTML = '';
+    if(ua !== undefined && ua !== q.correct) {
+       aiButtonHTML = `<button class="btn btn-sm btn-ai" style="margin-top:10px" onclick="askAI(${i})">✨ Neden Yanlış Yaptım?</button>
+                       <div id="ai-box-${i}" class="ai-box"></div>`;
+    }
+
+    list.innerHTML += `<div class="card" style="margin-bottom:10px"><div style="font-weight:bold; margin-bottom:8px;">${i+1}. Soru - ${badge}</div><div style="margin-bottom:12px;">${q.text}</div>${q.options.map((opt,j)=>{ let cls=''; if(j===q.correct) cls='ok'; else if(j===ua) cls='err'; return `<div class="option-row ${cls}"><strong>${LETTERS[j]}</strong> <span style="margin-left:8px">${opt}</span></div>`; }).join('')} ${aiButtonHTML} </div>`;
   }); area.scrollIntoView({behavior:'smooth'});
+}
+
+// V3.0 YAPAY ZEKA AÇIKLAMA FONKSİYONU
+async function askAI(qIndex) {
+  const box = document.getElementById(`ai-box-${qIndex}`);
+  box.classList.add('show');
+  box.innerHTML = '<div style="display:flex; align-items:center; gap:8px;"> <div class="spin" style="width:20px;height:20px;margin:0;border-width:2px;"></div> Yapay Zeka öğretmenin soruyu inceliyor... </div>';
+  
+  const q = currentQuiz.questions[qIndex];
+  const studentAns = q.options[quizAnswers[qIndex]];
+  const correctAns = q.options[q.correct];
+  
+  const prompt = `Sen bir öğretmensin. Öğrencim şu soruyu yanlış cevapladı:
+Soru: "${q.text}"
+Doğru Cevap: "${correctAns}"
+Öğrencinin Seçtiği Yanlış Cevap: "${studentAns}"
+Lütfen öğrenciye doğrudan ve sevecen bir dille hitap ederek, seçtiği cevabın neden yanlış olduğunu ve doğru cevabın neden "${correctAns}" olduğunu kısa, anlaşılır ve motive edici bir dille açıkla.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "text/plain" } })
+    });
+    const data = await res.json();
+    let explanation = data.candidates[0].content.parts[0].text;
+    explanation = explanation.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Yazıyı güzelleştir
+    box.innerHTML = `<strong>✨ Yapay Zeka:</strong><br><br>${explanation}`;
+  } catch(e) {
+    box.innerHTML = '❌ Yapay zekaya bağlanılamadı. Lütfen tekrar tıkla.';
+  }
 }
 </script>
 </body>
