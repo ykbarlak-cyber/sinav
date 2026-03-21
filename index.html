@@ -132,7 +132,25 @@
     </div>
   </div>
 </div>
-
+<div class="screen" id="s-result">
+  <div class="card" style="text-align:center; max-width:500px; margin:40px auto;">
+    <div class="emoji">🎯</div>
+    <h2 id="r-title">Sınav Bitti</h2>
+    <p style="color:var(--ink3)" id="r-sub"></p>
+    <div class="stats-3">
+      <div class="stat-box"><div class="stat-num" id="r-pct">-</div><div>Net</div></div>
+      <div class="stat-box"><div class="stat-num g" id="r-correct">0</div><div>Doğru</div></div>
+      <div class="stat-box"><div class="stat-num r" id="r-wrong">0</div><div>Yanlış</div></div>
+      <div class="stat-box"><div class="stat-num b" id="r-blank">0</div><div>Boş</div></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%; margin-bottom:10px;" onclick="toggleReview()">Cevaplarımı İncele</button>
+    <button class="btn btn-ghost" style="width:100%" onclick="showScreen('s-landing')">Ana Sayfaya Dön</button>
+  </div>
+  <div id="review-area" style="display:none; max-width:600px; margin:20px auto;">
+    <h3>Cevapların</h3>
+    <div id="review-list"></div>
+  </div>
+</div>
 <script>
 // ═══════════════════════════════════════════════
 // AYARLAR (ŞİFRELERİNİ BURAYA YAPIŞTIR)
