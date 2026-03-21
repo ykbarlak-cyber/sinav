@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Online Sınav Platformu</title>
 <style>
-  /* Temel Renkler ve Fontlar */
   :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc; --ink: #0f172a; --ink3: #64748b; --border: #e2e8f0; --correct: #22c55e; --wrong: #ef4444; --warning: #f59e0b; }
   body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); margin: 0; padding: 0; }
   .screen { display: none; padding: 20px; max-width: 800px; margin: 0 auto; }
@@ -70,15 +69,19 @@
   <div class="card" style="text-align:center; max-width:400px; margin:40px auto;">
     <div style="font-size:2.5rem;margin-bottom:14px">🔒</div>
     <h2>Öğretmen Girişi</h2>
-    <p style="color:var(--ink3)">Sisteme giriş için şifreyi girin.</p>
-    <div class="field"><input type="password" id="pw-input" placeholder="Şifre" onkeydown="if(event.key==='Enter')checkPw()" /></div>
+    <p style="color:var(--ink3)">Sisteme giriş için bilgilerinizi girin.</p>
+    <div class="field"><input type="text" id="t-name" placeholder="Kullanıcı Adı (Örn: Yönetici)" /></div>
+    <div class="field"><input type="password" id="t-pw" placeholder="Şifre" onkeydown="if(event.key==='Enter')checkPw()" /></div>
     <button class="btn btn-primary" style="width:100%; margin-top:16px;" onclick="checkPw()">Giriş Yap</button>
     <button class="btn btn-ghost" style="width:100%; margin-top:10px" onclick="showScreen('s-landing')">← Ana Sayfa</button>
   </div>
 </div>
 
 <div class="screen" id="s-teacher">
-  <button class="btn btn-ghost btn-sm" style="margin-bottom:10px" onclick="showScreen('s-landing')">🏠 Çıkış Yap</button>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <button class="btn btn-ghost btn-sm" onclick="logoutTeacher()">🏠 Çıkış Yap</button>
+    <div style="font-weight:bold; color:var(--primary);" id="teacher-welcome"></div>
+  </div>
   <div style="display:flex; gap:20px; flex-wrap:wrap;">
     <div style="flex:1; min-width:200px; background:white; padding:16px; border-radius:12px; border:1px solid var(--border);" id="teacher-sidebar"></div>
     <div style="flex:3; min-width:300px;" id="teacher-main">
@@ -90,7 +93,6 @@
 <div class="screen" id="s-student-select">
   <div>
     <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:6px">Sınıfını Seç</h2>
-    <p style="color:var(--ink3);margin-bottom:20px">Hangi sınıf ve şubede olduğunu seç.</p>
     <div id="student-class-grid" class="student-select-grid"></div>
     <button class="btn btn-ghost" style="margin-top:20px" onclick="showScreen('s-landing')">← Ana Sayfa</button>
   </div>
@@ -100,16 +102,14 @@
   <div>
     <button class="btn btn-ghost btn-sm" style="margin-bottom:16px;" onclick="showScreen('s-student-select')">← Geri</button>
     <h2 id="student-ql-title"></h2>
-    
     <div class="card" style="background:#eff6ff; border-color:#bfdbfe; margin-bottom: 20px;">
       <h4 style="margin:0 0 10px 0; color:#1e40af;">📊 İstatistiklerin</h4>
       <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
         <div><strong>Senin Ortalaman:</strong> <span id="stat-my-avg">-</span> Net</div>
-        <div><strong>Sınıf Genel Ortalaması:</strong> <span id="stat-class-avg">-</span> Net</div>
+        <div><strong>Sınıf Ortalaması:</strong> <span id="stat-class-avg">-</span> Net</div>
         <div><strong>Çözdüğün Sınav:</strong> <span id="stat-count">0</span></div>
       </div>
     </div>
-
     <div id="student-quiz-list" class="q-list"></div>
   </div>
 </div>
@@ -117,14 +117,12 @@
 <div class="screen" id="s-quiz">
   <div class="card" id="name-field-wrap">
     <h3>👋 Başlamadan Önce</h3>
-    <p style="color:var(--ink3); margin-bottom:16px;">Sonuçlarının kaydedilmesi için adını ve soyadını gir.</p>
     <div style="display:flex;gap:10px">
       <input type="text" id="student-name-input" class="field" style="flex:1" placeholder="Ad Soyad" onkeydown="if(event.key==='Enter')confirmName()" />
       <button class="btn btn-primary" onclick="confirmName()">Sınava Başla</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="showScreen('s-student-quizlist')">İptal</button>
   </div>
-
   <div id="quiz-body" style="display:none">
     <div style="font-weight:bold; margin-bottom:10px; color:var(--primary)" id="q-ctr"></div>
     <div id="q-card-area"></div>
@@ -135,119 +133,60 @@
   </div>
 </div>
 
-<div class="screen" id="s-result">
-  <div class="card" style="text-align:center;">
-    <h2 id="r-title" style="margin-bottom:5px;"></h2>
-    <p id="r-sub" style="color:var(--ink3); margin-bottom:20px;"></p>
-    
-    <div style="font-size:3rem; font-weight:800; color:var(--primary); margin:20px 0;" id="r-pct"></div>
-    <p style="color:var(--warning); font-size:0.9rem;">(4 Yanlış 1 Doğruyu Götürür)</p>
-
-    <div class="stats-3">
-      <div class="stat-box"><div class="stat-num g" id="r-correct">0</div><div>Doğru</div></div>
-      <div class="stat-box"><div class="stat-num r" id="r-wrong">0</div><div>Yanlış</div></div>
-      <div class="stat-box"><div class="stat-num b" id="r-blank">0</div><div>Boş</div></div>
-    </div>
-    
-    <div style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="toggleReview()">📋 Cevapları İncele</button>
-      <button class="btn btn-ghost" onclick="showScreen('s-student-select')">🏠 Sınıflara Dön</button>
-    </div>
-  </div>
-  
-  <div id="review-area" style="display:none; margin-top:20px;">
-    <h3>Soru İncelemeleri</h3>
-    <div id="review-list"></div>
-  </div>
-</div>
-
 <script>
 // ═══════════════════════════════════════════════
-// AYARLAR (BURAYI KENDİ BİLGİLERİNLE DOLDUR)
+// AYARLAR (ŞİFRELERİNİ BURAYA YAPIŞTIR)
 // ═══════════════════════════════════════════════
 const SUPABASE_URL = "https://uwjanizsyhihlenywqbo.supabase.co"; 
-const SUPABASE_KEY = "sb_publishable_1X-nEOI-GBvyisJMbrmHpw_ANXxGafx"; // <--- DİKKAT: Uzun Supabase Key
-const TEACHER_PASSWORD = "0404"; 
-const GEMINI_API_KEY = "AIzaSyCuHbrjCfiVCP-reZQXZiBjrqoyLn2xzGg"; // <--- DİKKAT: Yeni Gemini Key'in
+const SUPABASE_KEY = "sb_publishable_1X-nEOI-GBvyisJMbrmHpw_ANXxGafx"; // <--- UZUN SUPABASE ŞİFRESİ
+const GEMINI_API_KEY = "AIzaSyCuHbrjCfiVCP-reZQXZiBjrqoyLn2xzGg"; // <--- YENİ GEMINI ŞİFRESİ
 
-// ═══════════════════════════════════════════════
-// SABİTLER
-// ═══════════════════════════════════════════════
 const CLASS_DEFS = [
-  {id:'6',     label:'6. Sınıf',    icon:'📗'},
-  {id:'7',     label:'7. Sınıf',    icon:'📘'},
-  {id:'8',     label:'8. Sınıf',    icon:'📙'},
-  {id:'9',     label:'9. Sınıf',    icon:'📕'},
-  {id:'10',    label:'10. Sınıf',   icon:'📓'},
-  {id:'11',    label:'11. Sınıf',   icon:'📒'},
-  {id:'12',    label:'12. Sınıf',   icon:'📔'},
-  {id:'mezEA', label:'Mezun — EA',  icon:'🎓'},
-  {id:'mezSAY',label:'Mezun — SAY', icon:'🎓'},
-  {id:'kpss',  label:'KPSS',        icon:'🏛'},
+  {id:'6', label:'6. Sınıf', icon:'📗'}, {id:'7', label:'7. Sınıf', icon:'📘'},
+  {id:'8', label:'8. Sınıf', icon:'📙'}, {id:'9', label:'9. Sınıf', icon:'📕'},
+  {id:'10', label:'10. Sınıf', icon:'📓'}, {id:'11', label:'11. Sınıf', icon:'📒'},
+  {id:'12', label:'12. Sınıf', icon:'📔'}, {id:'mezEA', label:'Mezun — EA', icon:'🎓'},
+  {id:'mezSAY', label:'Mezun — SAY', icon:'🎓'}, {id:'kpss', label:'KPSS', icon:'🏛'}
 ];
 const BRANCHES = ['A','B','C'];
 const LETTERS  = ['A','B','C','D','E'];
+let currentTeacher = null;
 
-function isMiddleSchool(classId) {
-  return ['6', '7', '8'].includes(classId);
-}
-
-// ═══════════════════════════════════════════════
-// SUPABASE API BAĞLANTISI
-// ═══════════════════════════════════════════════
-async function sbFetch(path, opts={}){
-  const baseHeaders = {
-    'apikey': SUPABASE_KEY,
-    'Authorization': 'Bearer ' + SUPABASE_KEY,
-    'Content-Type': 'application/json',
-  };
-  if(!opts.skipPrefer) baseHeaders['Prefer'] = opts.prefer || 'return=representation';
-  const mergedHeaders = {...baseHeaders, ...(opts.headers||{})};
-  const {skipPrefer, prefer, headers, ...restOpts} = opts;
-  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-    ...restOpts,
-    headers: mergedHeaders
-  });
-  if(!res.ok){
-    const err = await res.text();
-    throw new Error(err);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-}
-
-// ═══════════════════════════════════════════════
-// ORTAK FONKSİYONLAR
-// ═══════════════════════════════════════════════
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
-}
-function showLoader(txt='Yükleniyor...'){ 
-  document.getElementById('loader-txt').textContent=txt; 
-  document.getElementById('loader').classList.add('show'); 
-}
+function isMiddleSchool(classId) { return ['6', '7', '8'].includes(classId); }
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function showLoader(txt='Yükleniyor...'){ document.getElementById('loader-txt').textContent=txt; document.getElementById('loader').classList.add('show'); }
 function hideLoader(){ document.getElementById('loader').classList.remove('show'); }
-function showToast(msg){ 
-  const t=document.getElementById('toast'); 
-  t.textContent=msg; t.classList.add('show'); 
-  setTimeout(()=>t.classList.remove('show'),3000); 
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),4000); }
+
+async function sbFetch(path, opts={}){
+  const headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': opts.prefer || 'return=representation' };
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, { ...opts, headers });
+  if(!res.ok) throw new Error(await res.text());
+  const text = await res.text(); return text ? JSON.parse(text) : null;
 }
 
 // ═══════════════════════════════════════════════
-// ÖĞRETMEN PANELİ
+// ÖĞRETMEN SİSTEMİ
 // ═══════════════════════════════════════════════
-let activeClassId=null, activeBranch=null, teacherTab='quizzes';
-let editingQuizId=null, draftQuestions=[], manualCount=0, pdfB64=null, txtContent=null;
-
-function checkPw(){
-  if(document.getElementById('pw-input').value === TEACHER_PASSWORD){
-    document.getElementById('pw-input').value = '';
-    showScreen('s-teacher');
-    renderTeacherSidebar();
-  } else { showToast('❌ Yanlış şifre!'); }
+async function checkPw(){
+  const tName = document.getElementById('t-name').value.trim();
+  const tPw = document.getElementById('t-pw').value.trim();
+  if(!tName || !tPw) { showToast('⚠️ Ad ve şifre boş olamaz.'); return; }
+  
+  showLoader('Giriş yapılıyor...');
+  try {
+    const res = await sbFetch(`teachers?name=eq.${tName}&password=eq.${tPw}`);
+    if(res && res.length > 0) {
+      currentTeacher = res[0];
+      document.getElementById('t-name').value = ''; document.getElementById('t-pw').value = '';
+      document.getElementById('teacher-welcome').textContent = `Hoş geldin, ${currentTeacher.name}`;
+      showScreen('s-teacher'); renderTeacherSidebar();
+    } else { showToast('❌ Kullanıcı adı veya şifre hatalı!'); }
+  } catch(e) { showToast('Bağlantı hatası: Veritabanını kontrol edin.'); }
+  hideLoader();
 }
+
+function logoutTeacher() { currentTeacher = null; showScreen('s-landing'); }
 
 function renderTeacherSidebar(){
   const sb = document.getElementById('teacher-sidebar');
@@ -259,10 +198,10 @@ function renderTeacherSidebar(){
   });
 }
 
-function selectBranch(classId, branch){
-  activeClassId=classId; activeBranch=branch; teacherTab='quizzes';
-  renderTeacherPanel();
-}
+let activeClassId=null, activeBranch=null, teacherTab='quizzes';
+let editingQuizId=null, draftQuestions=[], manualCount=0, pdfB64=null, txtContent=null;
+
+function selectBranch(classId, branch){ activeClassId=classId; activeBranch=branch; teacherTab='quizzes'; renderTeacherPanel(); }
 
 function renderTeacherPanel(){
   const cls = CLASS_DEFS.find(c=>c.id===activeClassId);
@@ -271,30 +210,25 @@ function renderTeacherPanel(){
     <div style="display:flex; gap:10px; margin-top:10px;">
       <button class="btn ${teacherTab==='quizzes'?'btn-primary':'btn-ghost'}" onclick="switchTab('quizzes')">Sınavlar</button>
       <button class="btn ${teacherTab==='new'?'btn-primary':'btn-ghost'}" onclick="switchTab('new')">+ Yeni Sınav</button>
-    </div></div>
-    <div id="tab-body"></div>`;
-  renderTab();
+    </div></div><div id="tab-body"></div>`;
+  if(teacherTab==='quizzes') renderQuizListTab(); else renderNewQuizTab();
 }
 
 function switchTab(t){ teacherTab=t; editingQuizId=null; draftQuestions=[]; pdfB64=null; txtContent=null; renderTeacherPanel(); }
 
-function renderTab(){
-  const tb=document.getElementById('tab-body');
-  if(teacherTab==='quizzes') renderQuizListTab(tb);
-  else renderNewQuizTab(tb);
-}
-
-async function renderQuizListTab(tb){
-  tb.innerHTML='<p>Yükleniyor...</p>';
+async function renderQuizListTab(){
+  const tb=document.getElementById('tab-body'); tb.innerHTML='<div class="spin" style="margin:20px auto"></div>';
   try{
-    const quizzes = await sbFetch(`quizzes?class_id=eq.${activeClassId}&branch=eq.${activeBranch}&order=created_at.desc`);
+    let url = `quizzes?class_id=eq.${activeClassId}&branch=eq.${activeBranch}&order=created_at.desc`;
+    if(!currentTeacher.is_admin) url += `&teacher_name=eq.${currentTeacher.name}`; // Sadece kendi sınavları
+    
+    const quizzes = await sbFetch(url);
     if(!quizzes || quizzes.length===0){
-      tb.innerHTML=`<div class="card" style="text-align:center"><p>Henüz sınav yok.</p><button class="btn btn-primary" onclick="switchTab('new')">İlk Sınavı Oluştur</button></div>`;
-      return;
+      tb.innerHTML=`<div class="card" style="text-align:center"><p>Henüz sınav yok.</p><button class="btn btn-primary" onclick="switchTab('new')">İlk Sınavı Oluştur</button></div>`; return;
     }
     tb.innerHTML=`<div class="q-list">${quizzes.map(q=>
       `<div class="quiz-card">
-        <div><strong>${q.name}</strong><br><small style="color:var(--ink3)">${q.questions.length} Soru</small></div>
+        <div><strong>${q.name}</strong><br><small style="color:var(--ink3)">${q.questions.length} Soru | Hazırlayan: ${q.teacher_name || 'Bilinmiyor'}</small></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="viewQuizResults('${q.id}', '${q.name}')">📊 Sonuçlar</button>
           <button class="btn btn-ghost btn-sm" onclick="startEditQuiz('${q.id}')">✏️ Düzenle</button>
@@ -308,83 +242,58 @@ async function viewQuizResults(quizId, quizName) {
   showLoader('Sonuçlar getiriliyor...');
   try {
     const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`);
-    if(!results || results.length === 0) {
-      alert("Henüz bu sınava katılan öğrenci yok.");
-      return;
-    }
+    if(!results || results.length === 0) { alert("Henüz bu sınava katılan öğrenci yok."); return; }
     const totalNet = results.reduce((sum, r) => sum + parseFloat(r.net), 0);
     const avgNet = (totalNet / results.length).toFixed(2);
-    
     let resultText = `SINAV: ${quizName}\nSINIF ORTALAMASI: ${avgNet} Net\n\n--- ÖĞRENCİLER ---\n`;
-    results.sort((a,b) => b.net - a.net).forEach((r, idx) => {
-      resultText += `${idx + 1}. ${r.student_name} | ${parseFloat(r.net).toFixed(2)} Net (D:${r.correct} Y:${r.wrong} B:${r.blank})\n`;
-    });
+    results.sort((a,b) => b.net - a.net).forEach((r, idx) => { resultText += `${idx + 1}. ${r.student_name} | ${parseFloat(r.net).toFixed(2)} Net\n`; });
     alert(resultText); 
-  } catch (error) {
-    alert("Sonuçlar alınamadı: " + error.message);
-  } finally { hideLoader(); }
+  } catch (error) { alert("Sonuçlar alınamadı: " + error.message); } finally { hideLoader(); }
 }
 
 async function deleteQuizById(id){
-  if(!confirm('Silmek istediğine emin misin? Öğrenci sonuçları da silinir!')) return;
+  if(!confirm('Silmek istediğine emin misin?')) return;
   showLoader('Siliniyor...');
-  try{ 
-    await sbFetch(`quizzes?id=eq.${id}`, { method: 'DELETE' }); 
-    showToast('Sınav silindi.'); renderTeacherPanel(); 
-  } catch(e){ showToast('❌ '+e.message); } finally{ hideLoader(); }
+  try{ await sbFetch(`quizzes?id=eq.${id}`, { method: 'DELETE' }); showToast('Sınav silindi.'); renderTeacherPanel(); } catch(e){ showToast('❌ '+e.message); } finally{ hideLoader(); }
 }
 
 async function startEditQuiz(id){
   showLoader('Yükleniyor...');
   try{
     const all = await sbFetch(`quizzes?class_id=eq.${activeClassId}&branch=eq.${activeBranch}`);
-    const quiz = all.find(q=>q.id===id);
-    if(!quiz) return;
+    const quiz = all.find(q=>q.id===id); if(!quiz) return;
     editingQuizId=id; draftQuestions=JSON.parse(JSON.stringify(quiz.questions));
     teacherTab='new'; renderTeacherPanel();
-    setTimeout(()=>{
-      document.getElementById('new-quiz-name').value=quiz.name;
-      renderDraftQ();
-    },50);
+    setTimeout(()=>{ document.getElementById('new-quiz-name').value=quiz.name; renderDraftQ(); },50);
   } catch(e){ showToast('❌ '+e.message); } finally{ hideLoader(); }
 }
 
-function renderNewQuizTab(tb){
-  const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
-  tb.innerHTML= `<div class="card">
-      <div class="field"><label>Sınav Adı</label><input type="text" id="new-quiz-name" placeholder="Örn: 1. Ünite Denemesi" /></div>
-    </div>
-    <div class="card">
-      <h4>🤖 PDF/TXT'den Soru Çıkar (${optCount} Şıklı)</h4>
+function renderNewQuizTab(){
+  const tb=document.getElementById('tab-body'); const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
+  tb.innerHTML= `<div class="card"><div class="field"><label>Sınav Adı</label><input type="text" id="new-quiz-name" placeholder="Örn: 1. Ünite Denemesi" /></div></div>
+    <div class="card"><h4>🤖 PDF/TXT'den Soru Çıkar (${optCount} Şıklı)</h4>
+      <p style="font-size:0.8rem; color:var(--warning)">⚠️ Maksimum dosya boyutu: 2 MB (Google sistemini yormamak için)</p>
       <input type="file" id="file-inp" accept=".pdf,.txt" onchange="handleFile(this)" style="margin-bottom:10px" />
       <button class="btn btn-primary" style="width:100%" onclick="extractFromFile()">Yapay Zeka ile Soruları Çıkar</button>
     </div>
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center">
-        <h4>📋 Sorular (${draftQuestions.length})</h4>
-        <button class="btn btn-ghost btn-sm" onclick="addManualQ()">+ Soru Ekle</button>
-      </div>
-      <div id="manual-q-area"></div>
-      <div id="draft-q-list" style="margin-top:16px;"></div>
-    </div>
-    <button class="btn btn-primary" style="width:100%; font-size:1.1rem" onclick="saveQuiz()">💾 Sınavı ${editingQuizId?'Güncelle':'Kaydet'}</button>`;
+    <div class="card"><div style="display:flex; justify-content:space-between; align-items:center"><h4>📋 Sorular (${draftQuestions.length})</h4><button class="btn btn-ghost btn-sm" onclick="addManualQ()">+ Soru Ekle</button></div>
+      <div id="manual-q-area"></div><div id="draft-q-list" style="margin-top:16px;"></div>
+    </div><button class="btn btn-primary" style="width:100%; font-size:1.1rem" onclick="saveQuiz()">💾 Sınavı ${editingQuizId?'Güncelle':'Kaydet'}</button>`;
   if(editingQuizId) renderDraftQ();
 }
 
+// 2 MB SINIRI BURADA
 function handleFile(input){
   const file=input.files[0]; if(!file) return;
+  if(file.size > 2 * 1024 * 1024) { 
+    showToast('⚠️ Dosya çok büyük! Lütfen en fazla 2 MB yükleyin.'); 
+    input.value = ''; pdfB64=null; txtContent=null; return; 
+  }
   const reader=new FileReader();
-  reader.onload=e=>{
-    if(file.name.toLowerCase().endsWith('.pdf')){ pdfB64=e.target.result.split(',')[1]; txtContent=null; }
-    else{ txtContent=e.target.result; pdfB64=null; }
-  };
-  if(file.name.toLowerCase().endsWith('.pdf')) reader.readAsDataURL(file);
-  else reader.readAsText(file);
+  reader.onload=e=>{ if(file.name.toLowerCase().endsWith('.pdf')){ pdfB64=e.target.result.split(',')[1]; txtContent=null; } else { txtContent=e.target.result; pdfB64=null; } };
+  if(file.name.toLowerCase().endsWith('.pdf')) reader.readAsDataURL(file); else reader.readAsText(file);
 }
 
-// ═══════════════════════════════════════════════
-// YAPAY ZEKA BAĞLANTISI (ŞİFRE SABİTLENDİ)
-// ═══════════════════════════════════════════════
 async function extractFromFile(){
   if(!pdfB64&&!txtContent){ showToast('⚠️ Önce dosya seçin.'); return; }
   if(GEMINI_API_KEY.includes("BURAYA")){ showToast('⚠️ Lütfen koddaki API şifrenizi ayarlayın.'); return; }
@@ -393,90 +302,50 @@ async function extractFromFile(){
   try{
     const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
     const exampleOpts = optCount === 4 ? '"A Şıkkı","B Şıkkı","C Şıkkı","D Şıkkı"' : '"A Şıkkı","B Şıkkı","C Şıkkı","D Şıkkı","E Şıkkı"';
-    
-    const systemInstruction = `Gönderilen metin veya PDF içindeki çoktan seçmeli soruları çıkar. SADECE geçerli bir JSON dizisi döndür. Başka kelime yazma.
-    Öğrenci kademesi için ${optCount} şıklı sorular hazırla. 
-    Format şu şekilde olmalı:
-    [{"text":"Soru metni","options":[${exampleOpts}],"correct":0,"explanation":"Açıklama"}]
-    Doğru cevap (correct) 0 ile ${optCount - 1} arasında indeks numarasıdır.`;
-
+    const systemInstruction = `Gönderilen metin veya PDF içindeki çoktan seçmeli soruları çıkar. SADECE geçerli bir JSON dizisi döndür. Başka kelime yazma. Öğrenci kademesi için ${optCount} şıklı sorular hazırla. Format şu şekilde olmalı: [{"text":"Soru metni","options":[${exampleOpts}],"correct":0,"explanation":"Açıklama"}] Doğru cevap (correct) 0 ile ${optCount - 1} arasında indeks numarasıdır.`;
     const parts = [];
-    if(pdfB64) parts.push({ inlineData: { mimeType: "application/pdf", data: pdfB64 } });
-    else if(txtContent) parts.push({ text: txtContent });
+    if(pdfB64) parts.push({ inlineData: { mimeType: "application/pdf", data: pdfB64 } }); else if(txtContent) parts.push({ text: txtContent });
     parts.push({ text: systemInstruction });
 
-    // 2.0 SÜRÜMÜ VE SABİT ŞİFRE BURADA KULLANILIYOR
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { responseMimeType: "application/json" } })
     });
 
     if(!res.ok){
-      throw new Error('API Hatası: ' + res.status);
+      const errData = await res.json();
+      throw new Error(errData.error?.message || `Google API Hatası: ${res.status}`);
     }
     const data = await res.json();
     const rawText = data.candidates[0].content.parts[0].text;
     const qs = JSON.parse(rawText.trim());
     
-    draftQuestions=[...draftQuestions,...qs];
-    renderDraftQ();
-    showToast(`✅ ${qs.length} soru eklendi!`);
-  } catch(e){ showToast('❌ Hata: Çok fazla istek attınız veya bağlantı koptu.'); } finally{ hideLoader(); }
+    draftQuestions=[...draftQuestions,...qs]; renderDraftQ(); showToast(`✅ ${qs.length} soru eklendi!`);
+  } catch(e){ 
+    alert(`YAPAY ZEKA HATASI:\n\n${e.message}\n\nEğer bu hata '429' veya 'quota' içeriyorsa Google 1 dakika beklemenizi istiyor demektir.`); 
+  } finally{ hideLoader(); }
 }
 
 function addManualQ(){
-  manualCount++; const id=manualCount;
-  const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
-  const area=document.getElementById('manual-q-area');
-  const div=document.createElement('div');
-  div.className='card'; div.id=`mqe-${id}`; div.style.background="#f8fafc";
-  
-  let optionsHTML = '';
-  for(let i=0; i<optCount; i++) {
-    optionsHTML += `<input type="text" id="mqopt-${id}-${i}" placeholder="${LETTERS[i]} Şıkkı" />`;
-  }
-  let selectHTML = '';
-  for(let i=0; i<optCount; i++) selectHTML += `<option value="${i}">${LETTERS[i]}</option>`;
-
-  div.innerHTML = `
-    <div style="display:flex;justify-content:space-between;margin-bottom:10px"><b>Manuel Soru</b> <button class="btn btn-danger btn-sm" onclick="this.closest('.card').remove()">Sil</button></div>
-    <div class="field"><textarea placeholder="Soru metni..." id="mqt-${id}"></textarea></div>
-    <div class="field" style="display:grid; gap:5px; margin-top:10px;">${optionsHTML}</div>
-    <div class="field" style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-      <span>Doğru:</span> <select id="mqans-${id}">${selectHTML}</select>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="commitManualQ(${id}, ${optCount})">Ekle</button>
-    </div>`;
+  manualCount++; const id=manualCount; const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
+  const area=document.getElementById('manual-q-area'); const div=document.createElement('div'); div.className='card'; div.id=`mqe-${id}`; div.style.background="#f8fafc";
+  let optionsHTML = ''; for(let i=0; i<optCount; i++) optionsHTML += `<input type="text" id="mqopt-${id}-${i}" placeholder="${LETTERS[i]} Şıkkı" />`;
+  let selectHTML = ''; for(let i=0; i<optCount; i++) selectHTML += `<option value="${i}">${LETTERS[i]}</option>`;
+  div.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:10px"><b>Manuel Soru</b> <button class="btn btn-danger btn-sm" onclick="this.closest('.card').remove()">Sil</button></div><div class="field"><textarea placeholder="Soru metni..." id="mqt-${id}"></textarea></div><div class="field" style="display:grid; gap:5px; margin-top:10px;">${optionsHTML}</div><div class="field" style="margin-top:10px; display:flex; gap:10px; align-items:center;"><span>Doğru:</span> <select id="mqans-${id}">${selectHTML}</select><button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="commitManualQ(${id}, ${optCount})">Ekle</button></div>`;
   area.appendChild(div);
 }
 
 function commitManualQ(id, optCount){
-  const text=document.getElementById(`mqt-${id}`).value.trim();
-  if(!text){ showToast('⚠️ Soru metni boş!'); return; }
-  
-  const opts = [];
-  for(let i=0; i<optCount; i++){
-    const val = document.getElementById(`mqopt-${id}-${i}`).value.trim();
-    if(val) opts.push(val);
-  }
+  const text=document.getElementById(`mqt-${id}`).value.trim(); if(!text){ showToast('⚠️ Soru metni boş!'); return; }
+  const opts = []; for(let i=0; i<optCount; i++){ const val = document.getElementById(`mqopt-${id}-${i}`).value.trim(); if(val) opts.push(val); }
   if(opts.length < 2){ showToast('⚠️ En az 2 şık girin.'); return; }
-  
   const correct=parseInt(document.getElementById(`mqans-${id}`).value);
-  draftQuestions.push({text, options:opts, correct, explanation:''});
-  document.getElementById(`mqe-${id}`).remove();
-  renderDraftQ(); showToast('Soru eklendi!');
+  draftQuestions.push({text, options:opts, correct, explanation:''}); document.getElementById(`mqe-${id}`).remove(); renderDraftQ(); showToast('Soru eklendi!');
 }
 
 function renderDraftQ(){
-  const list=document.getElementById('draft-q-list');
-  document.querySelector('h4').textContent = `📋 Sorular (${draftQuestions.length})`;
-  list.innerHTML=draftQuestions.map((q,i)=>
-    `<div class="card" style="border-left: 4px solid var(--primary);">
-      <div><strong>${i+1}.</strong> ${q.text}</div>
-      <div style="margin-top:8px; font-size:0.9rem; color:var(--ink3)">
-        ${q.options.map((o,j)=>`<span style="${j===q.correct?'color:var(--correct);font-weight:bold':''}">${LETTERS[j]}) ${o}</span>`).join(' | ')}
-      </div>
-      <button class="btn btn-danger btn-sm" style="margin-top:10px" onclick="removeDraftQ(${i})">Sil</button>
-    </div>`).join('');
+  const list=document.getElementById('draft-q-list'); document.querySelector('h4').textContent = `📋 Sorular (${draftQuestions.length})`;
+  list.innerHTML=draftQuestions.map((q,i)=> `<div class="card" style="border-left: 4px solid var(--primary);"><div><strong>${i+1}.</strong> ${q.text}</div><div style="margin-top:8px; font-size:0.9rem; color:var(--ink3)">${q.options.map((o,j)=>`<span style="${j===q.correct?'color:var(--correct);font-weight:bold':''}">${LETTERS[j]}) ${o}</span>`).join(' | ')}</div><button class="btn btn-danger btn-sm" style="margin-top:10px" onclick="removeDraftQ(${i})">Sil</button></div>`).join('');
 }
 function removeDraftQ(i){ draftQuestions.splice(i,1); renderDraftQ(); }
 
@@ -484,224 +353,83 @@ async function saveQuiz(){
   const name=document.getElementById('new-quiz-name').value.trim();
   if(!name){ showToast('⚠️ Sınav adı girin.'); return; }
   if(draftQuestions.length===0){ showToast('⚠️ Soru ekleyin.'); return; }
-  
   showLoader('Kaydediliyor...');
   try{
     if(editingQuizId){
       await sbFetch(`quizzes?id=eq.${editingQuizId}`, {method:'PATCH', body:JSON.stringify({name,questions:draftQuestions})});
     } else {
-      await sbFetch('quizzes', {method:'POST', body:JSON.stringify({class_id:activeClassId, branch:activeBranch, name, questions:draftQuestions})});
+      await sbFetch('quizzes', {method:'POST', body:JSON.stringify({class_id:activeClassId, branch:activeBranch, name, questions:draftQuestions, teacher_name: currentTeacher.name})});
     }
     switchTab('quizzes'); showToast('Sınav kaydedildi!');
   } catch(e){ showToast('❌ Hata'); } finally{ hideLoader(); }
 }
 
 // ═══════════════════════════════════════════════
-// ÖĞRENCİ PANELİ VE SINAV ÇÖZÜMÜ
+// ÖĞRENCİ PANELİ
 // ═══════════════════════════════════════════════
 let currentQuiz=null, quizAnswers={}, currentQIdx=0, studentName='';
-
-function initStudentGrid(){
-  showScreen('s-student-select');
-  const grid=document.getElementById('student-class-grid');
-  grid.innerHTML='';
-  CLASS_DEFS.forEach(cls=>{
-    const card=document.createElement('div');
-    card.className='class-select-card';
-    card.innerHTML=`<span class="emoji">${cls.icon}</span><h4>${cls.label}</h4>`;
-    card.onclick=()=>showBranchSelect(cls);
-    grid.appendChild(card);
-  });
-}
-
-function showBranchSelect(cls){
-  const grid=document.getElementById('student-class-grid');
-  grid.innerHTML= `<div style="grid-column:1/-1; margin-bottom:10px;"><button class="btn btn-ghost btn-sm" onclick="initStudentGrid()">← Geri</button></div>`;
-  BRANCHES.forEach(b=>{
-    const card=document.createElement('div');
-    card.className='class-select-card';
-    card.innerHTML=`<h4>${b} Şubesi</h4>`;
-    card.onclick=()=>openStudentQuizList(cls.id, b, cls.label);
-    grid.appendChild(card);
-  });
-}
+function initStudentGrid(){ showScreen('s-student-select'); const grid=document.getElementById('student-class-grid'); grid.innerHTML=''; CLASS_DEFS.forEach(cls=>{ const card=document.createElement('div'); card.className='class-select-card'; card.innerHTML=`<span class="emoji">${cls.icon}</span><h4>${cls.label}</h4>`; card.onclick=()=>showBranchSelect(cls); grid.appendChild(card); }); }
+function showBranchSelect(cls){ const grid=document.getElementById('student-class-grid'); grid.innerHTML= `<div style="grid-column:1/-1; margin-bottom:10px;"><button class="btn btn-ghost btn-sm" onclick="initStudentGrid()">← Geri</button></div>`; BRANCHES.forEach(b=>{ const card=document.createElement('div'); card.className='class-select-card'; card.innerHTML=`<h4>${b} Şubesi</h4>`; card.onclick=()=>openStudentQuizList(cls.id, b, cls.label); grid.appendChild(card); }); }
 
 async function openStudentQuizList(classId, branch, label){
-  document.getElementById('student-ql-title').textContent=`${label} / ${branch} Şubesi`;
-  showScreen('s-student-quizlist');
-  const list=document.getElementById('student-quiz-list');
-  list.innerHTML='<div class="spin" style="margin:20px auto"></div>';
-  
+  document.getElementById('student-ql-title').textContent=`${label} / ${branch} Şubesi`; showScreen('s-student-quizlist'); const list=document.getElementById('student-quiz-list'); list.innerHTML='<div class="spin" style="margin:20px auto"></div>';
   try{
     const quizzes=await sbFetch(`quizzes?class_id=eq.${classId}&branch=eq.${branch}&order=created_at.desc`);
     const allResults = await sbFetch(`quiz_results?class_id=eq.${classId}&branch=eq.${branch}`);
-    
     if(allResults && allResults.length > 0) {
-      const globalTotal = allResults.reduce((sum, r) => sum + parseFloat(r.net), 0);
-      document.getElementById('stat-class-avg').textContent = (globalTotal / allResults.length).toFixed(2);
-      document.getElementById('stat-count').textContent = allResults.length;
-    } else {
-      document.getElementById('stat-class-avg').textContent = "0";
-      document.getElementById('stat-count').textContent = "0";
-    }
-    
+      const globalTotal = allResults.reduce((sum, r) => sum + parseFloat(r.net), 0); document.getElementById('stat-class-avg').textContent = (globalTotal / allResults.length).toFixed(2); document.getElementById('stat-count').textContent = allResults.length;
+    } else { document.getElementById('stat-class-avg').textContent = "0"; document.getElementById('stat-count').textContent = "0"; }
     const storedName = localStorage.getItem('last_student_name') || '';
     if(storedName && allResults) {
       const myResults = allResults.filter(r => r.student_name.toLowerCase() === storedName.toLowerCase());
-      if(myResults.length > 0) {
-        const myTotal = myResults.reduce((sum, r) => sum + parseFloat(r.net), 0);
-        document.getElementById('stat-my-avg').textContent = (myTotal / myResults.length).toFixed(2);
-      }
+      if(myResults.length > 0) { const myTotal = myResults.reduce((sum, r) => sum + parseFloat(r.net), 0); document.getElementById('stat-my-avg').textContent = (myTotal / myResults.length).toFixed(2); }
     }
-
-    if(!quizzes || quizzes.length===0){
-      list.innerHTML='<div class="card" style="text-align:center"><p>Bu şubede henüz sınav yok.</p></div>'; return;
-    }
-    
-    window._quizMap = {};
-    quizzes.forEach(q => { window._quizMap[q.id] = q; });
-    list.innerHTML=quizzes.map(q=> 
-      `<div class="available-quiz" onclick="startStudentQuiz('${q.id}')">
-        <div><strong>${q.name}</strong><br><small>${q.questions.length} Soru</small></div>
-        <button class="btn btn-primary btn-sm">Çöz</button>
-      </div>`).join('');
+    if(!quizzes || quizzes.length===0){ list.innerHTML='<div class="card" style="text-align:center"><p>Bu şubede henüz sınav yok.</p></div>'; return; }
+    window._quizMap = {}; quizzes.forEach(q => { window._quizMap[q.id] = q; });
+    list.innerHTML=quizzes.map(q=> `<div class="available-quiz" onclick="startStudentQuiz('${q.id}')"><div><strong>${q.name}</strong><br><small>${q.questions.length} Soru | Hazırlayan: ${q.teacher_name || 'Okul'}</small></div><button class="btn btn-primary btn-sm">Çöz</button></div>`).join('');
   } catch(e){ list.innerHTML=`<p>Hata: ${e.message}</p>`; }
 }
 
-function startStudentQuiz(quizId){
-  currentQuiz = window._quizMap[quizId];
-  quizAnswers={}; currentQIdx=0; 
-  document.getElementById('student-name-input').value = localStorage.getItem('last_student_name') || '';
-  document.getElementById('name-field-wrap').style.display='block';
-  document.getElementById('quiz-body').style.display='none';
-  showScreen('s-quiz');
-}
+function startStudentQuiz(quizId){ currentQuiz = window._quizMap[quizId]; quizAnswers={}; currentQIdx=0; document.getElementById('student-name-input').value = localStorage.getItem('last_student_name') || ''; document.getElementById('name-field-wrap').style.display='block'; document.getElementById('quiz-body').style.display='none'; showScreen('s-quiz'); }
 
-// ═══════════════════════════════════════════════
-// ÖĞRENCİ ÇİFT GİRİŞ KONTROLÜ (YENİ)
-// ═══════════════════════════════════════════════
 async function confirmName(){
-  studentName=document.getElementById('student-name-input').value.trim();
-  if(!studentName){ showToast('Lütfen adını gir.'); return; }
-  
+  studentName=document.getElementById('student-name-input').value.trim(); if(!studentName){ showToast('Lütfen adını gir.'); return; }
   showLoader('Kontrol ediliyor...');
   try {
-    // Bu sınava ait tüm sonuçları çek
     const existingResults = await sbFetch(`quiz_results?quiz_id=eq.${currentQuiz.id}`);
-    
-    // Öğrenci ismi (büyük/küçük harf önemsiz) listede var mı diye bak
     if(existingResults) {
       const hasTaken = existingResults.some(r => r.student_name.toLowerCase() === studentName.toLowerCase());
-      if(hasTaken) {
-        hideLoader();
-        showToast('⚠️ Bu sınava daha önce girdiniz!');
-        return; // İşlemi durdur, sınavı açma
-      }
+      if(hasTaken) { hideLoader(); showToast('⚠️ Bu sınava daha önce girdiniz!'); return; }
     }
   } catch(e) { console.error("Kontrol hatası", e); }
-  hideLoader();
-
-  localStorage.setItem('last_student_name', studentName); 
-  document.getElementById('name-field-wrap').style.display='none';
-  document.getElementById('quiz-body').style.display='block';
-  renderQCard();
+  hideLoader(); localStorage.setItem('last_student_name', studentName); document.getElementById('name-field-wrap').style.display='none'; document.getElementById('quiz-body').style.display='block'; renderQCard();
 }
 
 function renderQCard(){
-  const q=currentQuiz.questions[currentQIdx];
-  document.getElementById('q-ctr').textContent = `Soru: ${currentQIdx+1} / ${currentQuiz.questions.length}`;
-  document.getElementById('q-card-area').innerHTML= `
-    <div class="card">
-      <div style="font-size:1.1rem; margin-bottom:16px;">${q.text}</div>
-      <div>
-        ${q.options.map((opt,i)=>
-          `<div class="option-row ${quizAnswers[currentQIdx]===i?'sel':''}" onclick="pickAnswer(${i})">
-            <strong>${LETTERS[i]}</strong> <span style="margin-left:8px">${opt}</span>
-          </div>`).join('')}
-      </div>
-    </div>`;
-    
-  document.getElementById('q-prev').disabled = currentQIdx===0;
-  const nb=document.getElementById('q-next');
-  if(currentQIdx === currentQuiz.questions.length-1){
-    nb.textContent='Sınavı Bitir ✓'; nb.className='btn btn-primary'; nb.onclick=finishQuiz;
-  } else {
-    nb.textContent='Sonraki →'; nb.className='btn btn-secondary'; nb.onclick=()=>qNav(1);
-  }
+  const q=currentQuiz.questions[currentQIdx]; document.getElementById('q-ctr').textContent = `Soru: ${currentQIdx+1} / ${currentQuiz.questions.length}`;
+  document.getElementById('q-card-area').innerHTML= `<div class="card"><div style="font-size:1.1rem; margin-bottom:16px;">${q.text}</div><div>${q.options.map((opt,i)=> `<div class="option-row ${quizAnswers[currentQIdx]===i?'sel':''}" onclick="pickAnswer(${i})"><strong>${LETTERS[i]}</strong> <span style="margin-left:8px">${opt}</span></div>`).join('')}</div></div>`;
+  document.getElementById('q-prev').disabled = currentQIdx===0; const nb=document.getElementById('q-next');
+  if(currentQIdx === currentQuiz.questions.length-1){ nb.textContent='Sınavı Bitir ✓'; nb.className='btn btn-primary'; nb.onclick=finishQuiz; } else { nb.textContent='Sonraki →'; nb.className='btn btn-secondary'; nb.onclick=()=>qNav(1); }
 }
 
-function pickAnswer(i){ quizAnswers[currentQIdx]=i; renderQCard(); }
-function qNav(dir){ currentQIdx+=dir; renderQCard(); }
+function pickAnswer(i){ quizAnswers[currentQIdx]=i; renderQCard(); } function qNav(dir){ currentQIdx+=dir; renderQCard(); }
 
 async function finishQuiz(){
-  const blank=currentQuiz.questions.length-Object.keys(quizAnswers).length;
-  if(blank>0 && !confirm(`${blank} boş sorun var. Bitirmek istiyor musun?`)) return;
-  
-  showLoader('Sonuçlar hesaplanıyor ve kaydediliyor...');
-  let correct=0, wrong=0;
-  
-  currentQuiz.questions.forEach((q,i)=>{
-    if(quizAnswers[i]!==undefined) {
-      if(quizAnswers[i]===q.correct) correct++; else wrong++;
-    }
-  });
-
+  const blank=currentQuiz.questions.length-Object.keys(quizAnswers).length; if(blank>0 && !confirm(`${blank} boş sorun var. Bitirmek istiyor musun?`)) return;
+  showLoader('Sonuçlar hesaplanıyor ve kaydediliyor...'); let correct=0, wrong=0;
+  currentQuiz.questions.forEach((q,i)=>{ if(quizAnswers[i]!==undefined) { if(quizAnswers[i]===q.correct) correct++; else wrong++; } });
   let net = correct - (wrong / 4);
-
-  try {
-    await sbFetch('quiz_results', {
-      method: 'POST',
-      body: JSON.stringify({
-        quiz_id: currentQuiz.id,
-        class_id: currentQuiz.class_id,
-        branch: currentQuiz.branch,
-        student_name: studentName,
-        correct: correct,
-        wrong: wrong,
-        blank: blank,
-        net: net
-      })
-    });
-  } catch(e) { console.error("Kaydedilemedi", e); }
-
-  hideLoader();
-  
-  document.getElementById('r-pct').textContent = net.toFixed(2) + ' Net';
-  document.getElementById('r-correct').textContent = correct;
-  document.getElementById('r-wrong').textContent = wrong;
-  document.getElementById('r-blank').textContent = blank;
-  
-  document.getElementById('r-title').textContent = net > (currentQuiz.questions.length/2) ? 'Tebrikler! 🎉' : 'Sınav Bitti';
-  document.getElementById('r-sub').textContent = `${studentName}, sonuçların sisteme başarıyla kaydedildi.`;
-  
-  document.getElementById('review-area').style.display='none';
-  showScreen('s-result');
+  try { await sbFetch('quiz_results', { method: 'POST', body: JSON.stringify({ quiz_id: currentQuiz.id, class_id: currentQuiz.class_id, branch: currentQuiz.branch, student_name: studentName, correct: correct, wrong: wrong, blank: blank, net: net }) }); } catch(e) { console.error("Kaydedilemedi", e); }
+  hideLoader(); document.getElementById('r-pct').textContent = net.toFixed(2) + ' Net'; document.getElementById('r-correct').textContent = correct; document.getElementById('r-wrong').textContent = wrong; document.getElementById('r-blank').textContent = blank; document.getElementById('r-title').textContent = net > (currentQuiz.questions.length/2) ? 'Tebrikler! 🎉' : 'Sınav Bitti'; document.getElementById('r-sub').textContent = `${studentName}, sonuçların sisteme başarıyla kaydedildi.`; document.getElementById('review-area').style.display='none'; showScreen('s-result');
 }
 
 function toggleReview(){
-  const area = document.getElementById('review-area');
-  if(area.style.display==='block') { area.style.display='none'; return; }
-  
-  area.style.display='block';
-  const list=document.getElementById('review-list');
-  list.innerHTML='';
-  
+  const area = document.getElementById('review-area'); if(area.style.display==='block') { area.style.display='none'; return; }
+  area.style.display='block'; const list=document.getElementById('review-list'); list.innerHTML='';
   currentQuiz.questions.forEach((q,i)=>{
-    const ua=quizAnswers[i];
-    let badge = ua===undefined?'⚪ Boş': ua===q.correct?'✅ Doğru': '❌ Yanlış';
-    
-    list.innerHTML += `<div class="card" style="margin-bottom:10px">
-      <div style="font-weight:bold; margin-bottom:8px;">${i+1}. Soru - ${badge}</div>
-      <div style="margin-bottom:12px;">${q.text}</div>
-      ${q.options.map((opt,j)=>{ 
-        let cls=''; 
-        if(j===q.correct) cls='ok'; 
-        else if(j===ua) cls='err'; 
-        return `<div class="option-row ${cls}"><strong>${LETTERS[j]}</strong> <span style="margin-left:8px">${opt}</span></div>`; 
-      }).join('')}
-    </div>`;
-  });
-  area.scrollIntoView({behavior:'smooth'});
+    const ua=quizAnswers[i]; let badge = ua===undefined?'⚪ Boş': ua===q.correct?'✅ Doğru': '❌ Yanlış';
+    list.innerHTML += `<div class="card" style="margin-bottom:10px"><div style="font-weight:bold; margin-bottom:8px;">${i+1}. Soru - ${badge}</div><div style="margin-bottom:12px;">${q.text}</div>${q.options.map((opt,j)=>{ let cls=''; if(j===q.correct) cls='ok'; else if(j===ua) cls='err'; return `<div class="option-row ${cls}"><strong>${LETTERS[j]}</strong> <span style="margin-left:8px">${opt}</span></div>`; }).join('')}</div>`;
+  }); area.scrollIntoView({behavior:'smooth'});
 }
 </script>
 </body>
