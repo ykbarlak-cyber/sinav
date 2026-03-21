@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Online Sınav Platformu</title>
 <style>
-  /* Temel Renkler ve Fontlar (Mevcut tasarımını korumak için varsayılanlar eklendi, kendi CSS'in varsa bunu değiştirebilirsin) */
+  /* Temel Renkler ve Fontlar */
   :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc; --ink: #0f172a; --ink3: #64748b; --border: #e2e8f0; --correct: #22c55e; --wrong: #ef4444; --warning: #f59e0b; }
   body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); margin: 0; padding: 0; }
   .screen { display: none; padding: 20px; max-width: 800px; margin: 0 auto; }
@@ -165,9 +165,10 @@
 // ═══════════════════════════════════════════════
 // AYARLAR (BURAYI KENDİ BİLGİLERİNLE DOLDUR)
 // ═══════════════════════════════════════════════
-const SUPABASE_URL = "https://uwjanizsyhihlenywqbo.supabase.co"; // Seninki eklendi!
-const SUPABASE_KEY = "sb_publishable_1X-nEOI-GBvyisJMbrmHpw_ANXxGafx"; // <--- DİKKAT: BURAYA KEY GELECEK
-const TEACHER_PASSWORD = "0404"; // Öğretmen giriş şifren (İstersen değiştir)
+const SUPABASE_URL = "https://uwjanizsyhihlenywqbo.supabase.co"; 
+const SUPABASE_KEY = "sb_publishable_1X-nEOI-GBvyisJMbrmHpw_ANXxGafx"; // <--- DİKKAT: Uzun Supabase Key
+const TEACHER_PASSWORD = "0404"; 
+const GEMINI_API_KEY = "AIzaSyCuHbrjCfiVCP-reZQXZiBjrqoyLn2xzGg"; // <--- DİKKAT: Yeni Gemini Key'in
 
 // ═══════════════════════════════════════════════
 // SABİTLER
@@ -187,7 +188,6 @@ const CLASS_DEFS = [
 const BRANCHES = ['A','B','C'];
 const LETTERS  = ['A','B','C','D','E'];
 
-// Kademe Kontrolü (Ortaokul mu?)
 function isMiddleSchool(classId) {
   return ['6', '7', '8'].includes(classId);
 }
@@ -304,7 +304,6 @@ async function renderQuizListTab(tb){
   } catch(e){ tb.innerHTML=`<p>Hata: ${e.message}</p>`; }
 }
 
-// ÖĞRETMEN İÇİN SONUÇ GÖRÜNTÜLEME
 async function viewQuizResults(quizId, quizName) {
   showLoader('Sonuçlar getiriliyor...');
   try {
@@ -384,17 +383,11 @@ function handleFile(input){
 }
 
 // ═══════════════════════════════════════════════
-// YAPAY ZEKA BAĞLANTISI (4 veya 5 ŞIK)
+// YAPAY ZEKA BAĞLANTISI (ŞİFRE SABİTLENDİ)
 // ═══════════════════════════════════════════════
 async function extractFromFile(){
   if(!pdfB64&&!txtContent){ showToast('⚠️ Önce dosya seçin.'); return; }
-  
-  let apiKey = localStorage.getItem('gemini_api_key');
-  if(!apiKey){
-    apiKey = prompt("Lütfen ücretsiz Google Gemini API anahtarınızı girin:");
-    if(!apiKey) return;
-    localStorage.setItem('gemini_api_key', apiKey.trim());
-  }
+  if(GEMINI_API_KEY.includes("BURAYA")){ showToast('⚠️ Lütfen koddaki API şifrenizi ayarlayın.'); return; }
 
   showLoader('AI Soruları Çıkarıyor...');
   try{
@@ -412,13 +405,13 @@ async function extractFromFile(){
     else if(txtContent) parts.push({ text: txtContent });
     parts.push({ text: systemInstruction });
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    // 2.0 SÜRÜMÜ VE SABİT ŞİFRE BURADA KULLANILIYOR
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { responseMimeType: "application/json" } })
     });
 
     if(!res.ok){
-      if(res.status === 400) localStorage.removeItem('gemini_api_key');
       throw new Error('API Hatası: ' + res.status);
     }
     const data = await res.json();
@@ -428,7 +421,7 @@ async function extractFromFile(){
     draftQuestions=[...draftQuestions,...qs];
     renderDraftQ();
     showToast(`✅ ${qs.length} soru eklendi!`);
-  } catch(e){ showToast('❌ Hata: ' + e.message); } finally{ hideLoader(); }
+  } catch(e){ showToast('❌ Hata: Çok fazla istek attınız veya bağlantı koptu.'); } finally{ hideLoader(); }
 }
 
 function addManualQ(){
@@ -540,13 +533,9 @@ async function openStudentQuizList(classId, branch, label){
   list.innerHTML='<div class="spin" style="margin:20px auto"></div>';
   
   try{
-    // Soruları Çek
     const quizzes=await sbFetch(`quizzes?class_id=eq.${classId}&branch=eq.${branch}&order=created_at.desc`);
-    
-    // Öğrencinin geçmiş sonuçlarını kontrol etmek için bir prompt açabiliriz ama 
-    // pratiklik için sadece sınıf genel istatistiğini çekip "Senin Ortalaman" kısmını 
-    // ismi girince hesaplamak daha mantıklı. Şimdilik sadece sınıf ortalamasını gösterelim.
     const allResults = await sbFetch(`quiz_results?class_id=eq.${classId}&branch=eq.${branch}`);
+    
     if(allResults && allResults.length > 0) {
       const globalTotal = allResults.reduce((sum, r) => sum + parseFloat(r.net), 0);
       document.getElementById('stat-class-avg').textContent = (globalTotal / allResults.length).toFixed(2);
@@ -556,7 +545,6 @@ async function openStudentQuizList(classId, branch, label){
       document.getElementById('stat-count').textContent = "0";
     }
     
-    // Geçici olarak isim sorma (İstatistikleri kişiselleştirmek için)
     const storedName = localStorage.getItem('last_student_name') || '';
     if(storedName && allResults) {
       const myResults = allResults.filter(r => r.student_name.toLowerCase() === storedName.toLowerCase());
@@ -589,11 +577,31 @@ function startStudentQuiz(quizId){
   showScreen('s-quiz');
 }
 
-function confirmName(){
+// ═══════════════════════════════════════════════
+// ÖĞRENCİ ÇİFT GİRİŞ KONTROLÜ (YENİ)
+// ═══════════════════════════════════════════════
+async function confirmName(){
   studentName=document.getElementById('student-name-input').value.trim();
   if(!studentName){ showToast('Lütfen adını gir.'); return; }
-  localStorage.setItem('last_student_name', studentName); // İsmi hatırla
   
+  showLoader('Kontrol ediliyor...');
+  try {
+    // Bu sınava ait tüm sonuçları çek
+    const existingResults = await sbFetch(`quiz_results?quiz_id=eq.${currentQuiz.id}`);
+    
+    // Öğrenci ismi (büyük/küçük harf önemsiz) listede var mı diye bak
+    if(existingResults) {
+      const hasTaken = existingResults.some(r => r.student_name.toLowerCase() === studentName.toLowerCase());
+      if(hasTaken) {
+        hideLoader();
+        showToast('⚠️ Bu sınava daha önce girdiniz!');
+        return; // İşlemi durdur, sınavı açma
+      }
+    }
+  } catch(e) { console.error("Kontrol hatası", e); }
+  hideLoader();
+
+  localStorage.setItem('last_student_name', studentName); 
   document.getElementById('name-field-wrap').style.display='none';
   document.getElementById('quiz-body').style.display='block';
   renderQCard();
@@ -638,11 +646,9 @@ async function finishQuiz(){
     }
   });
 
-  // 4 YANLIŞ 1 DOĞRUYU GÖTÜRÜR HESAPLAMASI
   let net = correct - (wrong / 4);
 
   try {
-    // Veritabanına Kaydet
     await sbFetch('quiz_results', {
       method: 'POST',
       body: JSON.stringify({
