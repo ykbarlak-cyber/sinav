@@ -245,19 +245,19 @@ async function downloadExcel(quizId, quizName) {
     const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`);
     if(!results || results.length === 0) { showToast("⚠️ İndirilecek sonuç yok."); return; }
     
-    // Türkçe karakterleri bozmayan UTF-8 BOM ekliyoruz
+    // UTF-8 BOM ve Noktalı Virgül (;) Ayarı
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
-    csvContent += "Ogrenci Adi,Dogru,Yanlis,Bos,Net\n"; // Başlıklar
+    csvContent += "Ogrenci Adi;Dogru;Yanlis;Bos;Net\n"; 
     
     results.sort((a,b) => b.net - a.net).forEach(r => {
-      let row = `"${r.student_name}",${r.correct},${r.wrong},${r.blank},${parseFloat(r.net).toFixed(2).replace('.', ',')}`;
+      // Değerleri noktalı virgülle ayırıyoruz ve ondalık sayıyı virgüllü yapıyoruz
+      let row = `"${r.student_name}";${r.correct};${r.wrong};${r.blank};${parseFloat(r.net).toFixed(2).replace('.', ',')}`;
       csvContent += row + "\n";
     });
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    // Sınavın adını ve tarihini dosya ismine ekliyoruz
     const safeName = quizName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     link.setAttribute("download", `${safeName}_notlari.csv`);
     document.body.appendChild(link);
