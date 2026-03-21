@@ -319,12 +319,21 @@ async function uploadQImage(input, qIndex) {
       headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY, 'Content-Type': file.type },
       body: file
     });
-    if(!res.ok) throw new Error('Yükleme hatası');
+    
+    // EĞER HATA VARSA SUPABASE'İN GERÇEK İTİRAFINI ALIYORUZ
+    if(!res.ok) {
+       const errText = await res.text();
+       throw new Error(errText);
+    }
+    
     const pubUrl = `${SUPABASE_URL}/storage/v1/object/public/quiz-images/${fileName}`;
     draftQuestions[qIndex].image = pubUrl;
     showToast('✅ Resim eklendi!');
     renderDraftQ();
-  } catch(e) { showToast('❌ Resim yüklenemedi.'); } finally { hideLoader(); input.value = ''; }
+  } catch(e) {
+    // HATAYI EKRANA KOCAMAN BASIYORUZ
+    alert('SUPABASE İTİRAFI: \n\n' + e.message);
+  } finally { hideLoader(); input.value = ''; }
 }
 
 function renderDraftQ(){
