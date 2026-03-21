@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Online Sınav Platformu V4</title>
+<title>Online Sınav Platformu V5</title>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
   :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc; --ink: #0f172a; --ink3: #64748b; --border: #e2e8f0; --correct: #22c55e; --wrong: #ef4444; --warning: #f59e0b; }
@@ -238,19 +238,16 @@ async function viewQuizResults(quizId, quizName) {
   } catch (error) { alert("Hata"); } finally { hideLoader(); }
 }
 
-// V4.0 EXCEL ÇIKTISI ALMA FONKSİYONU
 async function downloadExcel(quizId, quizName) {
   showLoader('Excel hazırlanıyor...');
   try {
     const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`);
     if(!results || results.length === 0) { showToast("⚠️ İndirilecek sonuç yok."); return; }
     
-    // UTF-8 BOM ve Noktalı Virgül (;) Ayarı
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
     csvContent += "Ogrenci Adi;Dogru;Yanlis;Bos;Net\n"; 
     
     results.sort((a,b) => b.net - a.net).forEach(r => {
-      // Değerleri noktalı virgülle ayırıyoruz ve ondalık sayıyı virgüllü yapıyoruz
       let row = `"${r.student_name}";${r.correct};${r.wrong};${r.blank};${parseFloat(r.net).toFixed(2).replace('.', ',')}`;
       csvContent += row + "\n";
     });
@@ -310,8 +307,34 @@ async function extractFromFile(){
   } catch(e){ alert(`HATA:\n\n${e.message}`); } finally{ hideLoader(); }
 }
 
+// V5.0 - RESİM YÜKLEME FONKSİYONU
+async function uploadQImage(input, qIndex) {
+  const file = input.files[0]; if(!file) return;
+  showLoader('Resim yükleniyor...');
+  const ext = file.name.split('.').pop();
+  const fileName = Date.now() + '_' + Math.random().toString(36).substr(2,5) + '.' + ext;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/quiz-images/${fileName}`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY, 'Content-Type': file.type },
+      body: file
+    });
+    if(!res.ok) throw new Error('Yükleme hatası');
+    const pubUrl = `${SUPABASE_URL}/storage/v1/object/public/quiz-images/${fileName}`;
+    draftQuestions[qIndex].image = pubUrl;
+    showToast('✅ Resim eklendi!');
+    renderDraftQ();
+  } catch(e) { showToast('❌ Resim yüklenemedi.'); } finally { hideLoader(); input.value = ''; }
+}
+
 function renderDraftQ(){
-  document.getElementById('draft-q-list').innerHTML=draftQuestions.map((q,i)=> `<div class="card" style="border-left: 4px solid var(--primary);"><div><strong>${i+1}.</strong> ${q.text}</div><div style="margin-top:8px; font-size:0.9rem; color:var(--ink3)">${q.options.map((o,j)=>`<span style="${j===q.correct?'color:var(--correct);font-weight:bold':''}">${LETTERS[j]}) ${o}</span>`).join(' | ')}</div><button class="btn btn-danger btn-sm" style="margin-top:10px" onclick="removeDraftQ(${i})">Sil</button></div>`).join('');
+  document.getElementById('draft-q-list').innerHTML=draftQuestions.map((q,i)=> `<div class="card" style="border-left: 4px solid var(--primary);"><div><strong>${i+1}.</strong> ${q.text}</div>
+  ${q.image ? `<img src="${q.image}" style="max-height:150px; margin-top:10px; border-radius:8px;">` : ''}
+  <div style="margin-top:8px; font-size:0.9rem; color:var(--ink3)">${q.options.map((o,j)=>`<span style="${j===q.correct?'color:var(--correct);font-weight:bold':''}">${LETTERS[j]}) ${o}</span>`).join(' | ')}</div>
+  <div style="display:flex; gap:10px; margin-top:12px;">
+    <label class="btn btn-secondary btn-sm" style="cursor:pointer;">📷 Resim Ekle <input type="file" style="display:none;" accept="image/*" onchange="uploadQImage(this, ${i})"></label>
+    <button class="btn btn-danger btn-sm" onclick="removeDraftQ(${i})">Sil</button>
+  </div></div>`).join('');
 }
 function removeDraftQ(i){ draftQuestions.splice(i,1); renderDraftQ(); }
 
@@ -395,7 +418,9 @@ function updateTimerDisplay() {
 
 function renderQCard(){
   const q=currentQuiz.questions[currentQIdx]; document.getElementById('q-ctr').textContent = `Soru: ${currentQIdx+1} / ${currentQuiz.questions.length}`;
-  document.getElementById('q-card-area').innerHTML= `<div class="card"><div style="font-size:1.1rem; margin-bottom:16px;">${q.text}</div><div>${q.options.map((opt,i)=> `<div class="option-row ${quizAnswers[currentQIdx]===i?'sel':''}" onclick="pickAnswer(${i})"><strong>${LETTERS[i]}</strong> <span style="margin-left:8px">${opt}</span></div>`).join('')}</div></div>`;
+  document.getElementById('q-card-area').innerHTML= `<div class="card"><div style="font-size:1.1rem; margin-bottom:16px;">${q.text}</div>
+  ${q.image ? `<img src="${q.image}" style="max-width:100%; max-height:300px; border-radius:8px; margin-bottom:16px;">` : ''}
+  <div>${q.options.map((opt,i)=> `<div class="option-row ${quizAnswers[currentQIdx]===i?'sel':''}" onclick="pickAnswer(${i})"><strong>${LETTERS[i]}</strong> <span style="margin-left:8px">${opt}</span></div>`).join('')}</div></div>`;
   document.getElementById('q-prev').disabled = currentQIdx===0; const nb=document.getElementById('q-next');
   if(currentQIdx === currentQuiz.questions.length-1){ nb.textContent='Sınavı Bitir ✓'; nb.className='btn btn-primary'; nb.onclick=()=>finishQuiz(false); } else { nb.textContent='Sonraki →'; nb.className='btn btn-secondary'; nb.onclick=()=>qNav(1); }
 }
@@ -445,7 +470,10 @@ function toggleReview(){
                        <div id="ai-box-${i}" class="ai-box"></div>`;
     }
 
-    list.innerHTML += `<div class="card" style="margin-bottom:10px"><div style="font-weight:bold; margin-bottom:8px;">${i+1}. Soru - ${badge}</div><div style="margin-bottom:12px;">${q.text}</div>${q.options.map((opt,j)=>{ let cls=''; if(j===q.correct) cls='ok'; else if(j===ua) cls='err'; return `<div class="option-row ${cls}"><strong>${LETTERS[j]}</strong> <span style="margin-left:8px">${opt}</span></div>`; }).join('')} ${aiButtonHTML} </div>`;
+    list.innerHTML += `<div class="card" style="margin-bottom:10px"><div style="font-weight:bold; margin-bottom:8px;">${i+1}. Soru - ${badge}</div>
+    <div style="margin-bottom:12px;">${q.text}</div>
+    ${q.image ? `<img src="${q.image}" style="max-width:100%; max-height:200px; border-radius:8px; margin-bottom:12px;">` : ''}
+    ${q.options.map((opt,j)=>{ let cls=''; if(j===q.correct) cls='ok'; else if(j===ua) cls='err'; return `<div class="option-row ${cls}"><strong>${LETTERS[j]}</strong> <span style="margin-left:8px">${opt}</span></div>`; }).join('')} ${aiButtonHTML} </div>`;
   }); area.scrollIntoView({behavior:'smooth'});
 }
 
