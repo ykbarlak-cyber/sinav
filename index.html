@@ -216,12 +216,11 @@ async function renderQuizListTab(){
     const quizzes = await sbFetch(url);
     if(!quizzes || quizzes.length===0){ tb.innerHTML=`<div class="card" style="text-align:center"><p>Sınav yok.</p></div>`; return; }
     
-    // V4.0 YENİ BUTONLAR: SONUÇLAR, EXCEL İNDİR, SİL
     tb.innerHTML=`<div class="q-list">${quizzes.map(q=>
-      `<div class="quiz-card"><div><strong>${q.name}</strong><br><small>${q.questions.length} Soru | Süre: ${q.time_limit?q.time_limit+' dk':'Süresiz'}</small></div>
+      `<div class="quiz-card"><div style="flex:1; padding-right:16px;"><strong>${q.name}</strong><div style="color:var(--ink3); margin-top:6px; font-size:0.9rem;">${q.questions.length} Soru | Süre: ${q.time_limit?q.time_limit+' dk':'Süresiz'}</div></div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary btn-sm" onclick="viewQuizResults('${q.id}', '${q.name}')">📊 Sonuçlar</button>
-          <button class="btn btn-excel btn-sm" onclick="downloadExcel('${q.id}', '${q.name}')">📥 Excel İndir</button>
+          <button class="btn btn-excel btn-sm" onclick="downloadExcel('${q.id}', '${q.name}')">📥 Excel</button>
           <button class="btn btn-danger btn-sm" onclick="deleteQuizById('${q.id}')">Sil</button>
         </div>
       </div>`).join('')}</div>`;
