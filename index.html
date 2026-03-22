@@ -353,23 +353,49 @@ async function addStudent() {
 
 async function bulkAddStudents() {
   const rawData = document.getElementById('bulk-students-data').value.trim();
-  if(!rawData) return showToast('⚠️ Lütfen önce Excelden kopyaladığınız veriyi kutuya yapıştırın.');
+  if(!rawData) return showToast('⚠️ Lütfen veriyi kutuya yapıştırın.');
   
-  const lines = rawData.split('\\n');
+  const lines = rawData.split('\n');
   const newStudents = [];
   
   for(let line of lines) {
-    const parts = line.split('\\t'); // Excel'den kopyalanan hücreleri (Tab boşluğunu) algılar
-    if(parts.length >= 3) {
+    if(!line.trim()) continue; // Boş satırları görmezden gel
+    
+    // Satırı İSTİSNASIZ bütün boşluklardan (Tab, normal boşluk vs.) parçala
+    const tokens = line.trim().split(/\s+/);
+    
+    // En az 3 parça (Ad, No, Şifre) varsa işleme al
+    if(tokens.length >= 3) {
+      const password = tokens.pop(); // En sondaki kelimeyi Şifre al
+      const student_number = tokens.pop(); // Sondan bir öncekini Numara al
+      const name = tokens.join(' '); // Geriye kalan her şeyi İsim olarak birleştir
+      
       newStudents.push({
-        name: parts[0].trim(),
-        student_number: parts[1].trim(),
-        password: parts[2].trim(),
+        name: name,
+        student_number: student_number,
+        password: password,
         class_id: activeClassId,
         branch: activeBranch
       });
     }
   }
+  
+  if(newStudents.length === 0) {
+    return showToast('❌ Hata: İsim, Numara ve Şifre arasında en az birer boşluk olmalı.');
+  }
+  
+  showLoader(newStudents.length + ' Öğrenci Sisteme Yükleniyor...');
+  try {
+    await sbFetch('students', { method: 'POST', body: JSON.stringify(newStudents) });
+    showToast('🎉 ' + newStudents.length + ' Öğrenci Başarıyla Eklendi!');
+    document.getElementById('bulk-students-data').value = '';
+    loadStudentList();
+  } catch(e) {
+    showToast('❌ Kayıt hatası! Listede daha önce kaydedilmiş bir numara olabilir.');
+  } finally { 
+    hideLoader(); 
+  }
+}
   
   if(newStudents.length === 0) return showToast('❌ Geçerli veri bulunamadı. Excelde Ad, No, Şifre yan yana olmalıdır.');
   
