@@ -136,7 +136,9 @@
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
     <div style="font-weight:800; font-size:1.2rem; color:var(--ink);" id="t-inst-header">Sınav Merkezi <span style="color:var(--primary)">V10.0</span></div>
     <div style="display:flex; align-items:center; gap:16px;">
+      <div style="display:flex; align-items:center; gap:16px;">
       <div style="font-weight:600; color:var(--ink3);" id="teacher-welcome"></div>
+      <button class="btn btn-secondary btn-sm" onclick="changeMyPassword()">🔑 Şifre Değiştir</button>
       <button class="btn btn-danger btn-sm" onclick="logoutTeacher()">Çıkış Yap</button>
     </div>
   </div>
@@ -567,6 +569,24 @@ async function changeStudentPassword() {
   try {
     await sbFetch(`students?id=eq.${currentStudent.id}`, { method: 'PATCH', body: JSON.stringify({ password: newPw }) });
     currentStudent.password = newPw; // Sistemin hafızasında da anında güncelleyelim
+    showToast('✅ Şifreniz başarıyla değiştirildi!');
+  } catch (e) {
+    showToast('❌ Güncelleme sırasında hata oluştu.');
+  } finally { hideLoader(); }
+}
+  // --- 👨‍🏫 ÖĞRETMEN ŞİFRE DEĞİŞTİRME SİSTEMİ ---
+async function changeMyPassword() {
+  const oldPw = prompt('Güvenlik için lütfen MEVCUT şifrenizi giriniz:');
+  if (!oldPw) return;
+  if (oldPw !== currentTeacher.password) return showToast('❌ Eski şifre hatalı!');
+  
+  const newPw = prompt('Lütfen YENİ şifrenizi giriniz:');
+  if (!newPw || newPw.trim() === '') return showToast('⚠️ Yeni şifre boş olamaz!');
+  
+  showLoader('Şifreniz güncelleniyor...');
+  try {
+    await sbFetch(`teachers?id=eq.${currentTeacher.id}`, { method: 'PATCH', body: JSON.stringify({ password: newPw }) });
+    currentTeacher.password = newPw; // Sistemi anında güncelle
     showToast('✅ Şifreniz başarıyla değiştirildi!');
   } catch (e) {
     showToast('❌ Güncelleme sırasında hata oluştu.');
