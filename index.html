@@ -215,19 +215,59 @@ async function loginStudent(){
 
 function logoutStudent() { currentStudent = null; showScreen('s-landing'); }
 
+// ═══════════════════════════════════════════════
+// ÖĞRENCİ PANELİ (OYUNLAŞTIRMA VE LİDERLİK TABLOSU V9.0)
+// ═══════════════════════════════════════════════
 async function renderStudentDashboard() {
   showScreen('s-student-dashboard');
-  document.getElementById('student-welcome-text').innerHTML = `🎓 Hoş geldin, <span style="color:var(--primary)">${currentStudent.name}</span> (${currentStudent.class_id}-${currentStudent.branch})`;
-  const actDiv = document.getElementById('student-active-quizzes'); const pastDiv = document.getElementById('student-past-results');
-  actDiv.innerHTML = '<div class="spin" style="margin:20px auto"></div>'; pastDiv.innerHTML = '<div class="spin" style="margin:20px auto"></div>';
-  
+
+  // Panelin iç tasarımını Yapay Zeka ile dinamik olarak yeniden inşa ediyoruz
+  const dashContainer = document.getElementById('s-student-dashboard');
+  dashContainer.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+      <div style="font-weight:800; font-size:1.2rem;">🎓 Hoş geldin, <span style="color:var(--primary)">${currentStudent.name}</span> (${currentStudent.class_id}-${currentStudent.branch})</div>
+      <button class="btn btn-danger btn-sm" onclick="logoutStudent()">Çıkış Yap</button>
+    </div>
+
+    <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
+        <div class="card" style="flex:2; border-top: 4px solid var(--primary); min-width:300px;">
+          <h3 style="margin-top:0"><span class="emoji" style="font-size:1.5rem;display:inline;">📝</span> Girmem Gereken Sınavlar</h3>
+          <div id="student-active-quizzes"><div class="spin" style="margin:20px auto"></div></div>
+        </div>
+
+        <div class="card" style="flex:1; border-top: 4px solid #f59e0b; min-width:300px; background:linear-gradient(135deg, #fffbeb, #fef3c7);">
+          <h3 style="margin-top:0; color:#d97706;"><span class="emoji" style="font-size:1.5rem;display:inline;">🏆</span> Sınıf Liderlik Tablosu</h3>
+          <p style="font-size:0.85rem; color:#92400e; margin-top:-10px; margin-bottom:15px;">Toplam netlere göre sınıfın en iyileri</p>
+          <div id="student-leaderboard"><div class="spin" style="margin:20px auto"></div></div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--correct);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+          <h3 style="margin:0"><span class="emoji" style="font-size:1.5rem;display:inline;">📊</span> Geçmiş Sonuçlarım</h3>
+          <div id="student-badges" style="display:flex; gap:8px; align-items:center; background:#f8fafc; padding:8px 12px; border-radius:10px; border:1px solid var(--border);">
+            <div class="spin" style="width:20px; height:20px; margin:0;"></div>
+          </div>
+      </div>
+      <div id="student-past-results"><div class="spin" style="margin:20px auto"></div></div>
+    </div>
+  `;
+
+  const actDiv = document.getElementById('student-active-quizzes');
+  const pastDiv = document.getElementById('student-past-results');
+  const leaderDiv = document.getElementById('student-leaderboard');
+  const badgeDiv = document.getElementById('student-badges');
+
   try {
     const quizzes = await sbFetch(`quizzes?class_id=eq.${currentStudent.class_id}&branch=eq.${currentStudent.branch}&order=created_at.desc`);
-    const results = await sbFetch(`quiz_results?student_number=eq.${currentStudent.student_number}&order=created_at.desc`);
-    let solvedQuizIds = results ? results.map(r => r.quiz_id) : [];
-    
+    const allClassResults = await sbFetch(`quiz_results?class_id=eq.${currentStudent.class_id}&branch=eq.${currentStudent.branch}`);
+
+    const myResults = allClassResults ? allClassResults.filter(r => r.student_number === currentStudent.student_number).sort((a,b) => new Date(b.created_at) - new Date(a.created_at)) : [];
+    let solvedQuizIds = myResults.map(r => r.quiz_id);
+
+    // 1. AKTİF SINAVLAR
     const activeQ = quizzes ? quizzes.filter(q => !solvedQuizIds.includes(q.id)) : [];
-    if(activeQ.length === 0) { actDiv.innerHTML = '<p style="color:var(--ink3)">Şu an girmen gereken yeni bir sınav yok. 🎉</p>'; } 
+    if(activeQ.length === 0) { actDiv.innerHTML = '<p style="color:var(--ink3); font-weight:500;">Şu an girmen gereken yeni bir sınav yok. 🎉 Liderlik tablosundaki yerine bakarak eğlenmene bak!</p>'; }
     else {
       window._quizMap = {}; activeQ.forEach(q => window._quizMap[q.id] = q);
       actDiv.innerHTML = activeQ.map(q => `<div class="available-quiz" onclick="prepareStudentQuiz('${q.id}')">
@@ -235,14 +275,61 @@ async function renderStudentDashboard() {
         <button class="btn btn-primary btn-sm">Sınava Gir</button></div>`).join('');
     }
 
-    if(!results || results.length === 0) { pastDiv.innerHTML = '<p style="color:var(--ink3)">Henüz çözdüğün bir sınav yok.</p>'; }
+    // 2. GEÇMİŞ SONUÇLAR VE ROZET HESAPLAMA
+    let totalNet = 0; let perfectScores = 0;
+    if(myResults.length === 0) { pastDiv.innerHTML = '<p style="color:var(--ink3)">Henüz çözdüğün bir sınav yok.</p>'; }
     else {
-      pastDiv.innerHTML = results.map(r => `<div class="available-quiz" style="cursor:default;">
+      pastDiv.innerHTML = myResults.map(r => {
+        totalNet += parseFloat(r.net);
+        const qCount = r.correct + r.wrong + r.blank;
+        if(qCount > 0 && r.correct / qCount >= 0.8) perfectScores++;
+        return `<div class="available-quiz" style="cursor:default; margin-bottom:10px;">
         <div><strong>${quizzes.find(q=>q.id===r.quiz_id)?.name || 'Silinmiş Sınav'}</strong><div style="font-size:0.85rem; color:var(--ink3); margin-top:4px;">Doğru: ${r.correct} | Yanlış: ${r.wrong} | Boş: ${r.blank}</div></div>
-        <div style="background:#e0e7ff; color:var(--primary); padding:6px 12px; border-radius:8px; font-weight:bold;">${parseFloat(r.net).toFixed(2)} Net</div></div>`).join('');
+        <div style="background:#e0e7ff; color:var(--primary); padding:6px 12px; border-radius:8px; font-weight:bold;">${parseFloat(r.net).toFixed(2)} Net</div></div>`;
+      }).join('');
     }
-  } catch(e) { actDiv.innerHTML = 'Hata oluştu.'; pastDiv.innerHTML = 'Hata oluştu.'; }
+
+    // ROZETLERİ ÇİZ
+    let badgesHTML = '<strong style="color:var(--ink3); font-size:0.9rem; margin-right:5px;">Rozetlerim:</strong>';
+    let hasBadge = false;
+    if(myResults.length >= 1) { badgesHTML += `<span title="İlk sınavını tamamladın!" style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold;">🚀 İlk Adım</span>`; hasBadge = true; }
+    if(perfectScores >= 1) { badgesHTML += `<span title="%80 başarıyı geçtin!" style="background:#fef08a; color:#854d0e; padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold;">🌍 Coğrafya Dehası</span>`; hasBadge = true; }
+    if(totalNet >= 20) { badgesHTML += `<span title="Toplamda 20 neti geçtin!" style="background:#e9d5ff; color:#581c87; padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold;">👑 Net Canavarı</span>`; hasBadge = true; }
+    
+    if(!hasBadge) badgesHTML += '<span style="font-size:0.85rem; color:var(--ink3);">Sınav çözdükçe rozet kazanacaksın!</span>';
+    badgeDiv.innerHTML = badgesHTML;
+
+    // 3. LİDERLİK TABLOSU (TOPLAM NETE GÖRE)
+    if(!allClassResults || allClassResults.length === 0) {
+        leaderDiv.innerHTML = '<p style="color:#92400e; font-size:0.95rem;">Sınıfta henüz kimse sınav çözmedi. İlk sen ol ve zirveye yerleş!</p>';
+    } else {
+        const studentTotals = {};
+        allClassResults.forEach(r => {
+            if(!studentTotals[r.student_name]) studentTotals[r.student_name] = 0;
+            studentTotals[r.student_name] += parseFloat(r.net);
+        });
+
+        const sortedStudents = Object.keys(studentTotals).map(name => ({name, net: studentTotals[name]})).sort((a,b) => b.net - a.net);
+
+        let leaderHTML = '<table style="width:100%; border-collapse:collapse; font-size:0.95rem;">';
+        sortedStudents.slice(0, 5).forEach((stu, index) => {
+            let medal = '🔹'; if(index === 0) medal = '🥇'; else if(index === 1) medal = '🥈'; else if(index === 2) medal = '🥉';
+            const isMe = stu.name === currentStudent.name;
+            leaderHTML += `<tr style="${isMe ? 'background:#fde68a; font-weight:bold; border-radius:8px;' : ''}">
+                <td style="padding:10px 8px; border-bottom:1px solid #fde68a; color:#92400e;">${medal} ${stu.name} ${isMe ? '(Sen)' : ''}</td>
+                <td style="padding:10px 8px; border-bottom:1px solid #fde68a; text-align:right; color:#d97706; font-weight:bold;">${stu.net.toFixed(2)} Net</td>
+            </tr>`;
+        });
+        leaderHTML += '</table>';
+
+        const myRank = sortedStudents.findIndex(s => s.name === currentStudent.name) + 1;
+        if(myRank > 0) { leaderHTML += `<div style="text-align:center; margin-top:16px; font-size:1.05rem; color:#b45309; background:#fffbeb; padding:8px; border-radius:8px; border:1px solid #fde68a;">Sınıftaki Sıranız: <strong style="font-size:1.2rem;">${myRank}.</strong> / ${sortedStudents.length}</div>`; }
+        leaderDiv.innerHTML = leaderHTML;
+    }
+
+  } catch(e) { console.error(e); actDiv.innerHTML = 'Hata oluştu.'; pastDiv.innerHTML = 'Hata oluştu.'; leaderDiv.innerHTML = 'Hata oluştu.'; }
 }
+// ----------------------------------------------
 
 // ═══════════════════════════════════════════════
 // ÖĞRETMEN SİSTEMİ 
