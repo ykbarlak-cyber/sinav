@@ -415,10 +415,38 @@ async function checkPw(){
 function logoutTeacher() { currentTeacher = null; showScreen('s-landing'); }
 
 function renderTeacherSidebar(){
-  const sb = document.getElementById('teacher-sidebar'); sb.innerHTML = '<h3>Mevcut Sınıflar</h3>';
-  CLASS_DEFS.forEach(cls=>{
-    sb.innerHTML += `<div class="sidebar-class-row"><div style="font-size:1.1rem; margin-bottom:10px;">${cls.icon} <strong>${cls.label}</strong></div><div style="display:flex; gap:8px; flex-wrap:wrap;"> ${BRANCHES.map(b=>`<button class="btn-branch" onclick="selectBranch('${cls.id}','${b}')">${b} Şubesi</button>`).join('')} </div></div>`;
-  });
+  const sb = document.getElementById('teacher-sidebar');
+  sb.innerHTML = `
+    <h3>Sınıf & Şube Seç</h3>
+    <div style="margin-bottom:16px;">
+      <label style="color:#94a3b8; font-size:0.85rem; font-weight:600; display:block; margin-bottom:8px;">SINIF</label>
+      <select id="class-select" onchange="updateBranchSelect()" style="width:100%; padding:10px; border-radius:8px; border:none; background:rgba(255,255,255,0.1); color:white; font-size:1rem; cursor:pointer;">
+        <option value="">-- Sınıf Seçin --</option>
+        ${CLASS_DEFS.map(cls => `<option value="${cls.id}">${cls.icon} ${cls.label}</option>`).join('')}
+      </select>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="color:#94a3b8; font-size:0.85rem; font-weight:600; display:block; margin-bottom:8px;">ŞUBE</label>
+      <select id="branch-select" style="width:100%; padding:10px; border-radius:8px; border:none; background:rgba(255,255,255,0.1); color:white; font-size:1rem; cursor:pointer;">
+        <option value="">-- Önce Sınıf Seçin --</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="width:100%; padding:12px; font-size:1rem;" onclick="goToClass()">➜ Panele Git</button>
+  `;
+}
+
+function updateBranchSelect(){
+  const classVal = document.getElementById('class-select').value;
+  const branchSel = document.getElementById('branch-select');
+  if(!classVal){ branchSel.innerHTML = '<option value="">-- Önce Sınıf Seçin --</option>'; return; }
+  branchSel.innerHTML = BRANCHES.map(b => `<option value="${b}">${b} Şubesi</option>`).join('');
+}
+
+function goToClass(){
+  const classId = document.getElementById('class-select').value;
+  const branch = document.getElementById('branch-select').value;
+  if(!classId || !branch){ showToast('⚠️ Sınıf ve şube seçin.'); return; }
+  selectBranch(classId, branch);
 }
 
 let activeClassId=null, activeBranch=null, teacherTab='quizzes'; let editingQuizId=null, draftQuestions=[], manualCount=0, pdfB64=null, txtContent=null;
