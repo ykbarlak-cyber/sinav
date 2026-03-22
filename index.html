@@ -658,6 +658,21 @@ async function changeMyPassword() {
     showToast('❌ Güncelleme sırasında hata oluştu.');
   } finally { hideLoader(); }
 }
+  async function startQuiz(quizId) {
+  showLoader('Sınav yükleniyor...');
+  try {
+    const res = await sbFetch(`quizzes?id=eq.${quizId}`);
+    if (!res || res.length === 0) { showToast('❌ Sınav bulunamadı.'); hideLoader(); return; }
+    const quiz = res[0];
+    currentQuiz = quiz;
+    currentAnswers = new Array(quiz.questions.length).fill(null);
+    currentQIndex = 0;
+    showScreen('s-quiz');
+    renderQuestion();
+    if (quiz.time_limit) startTimer(quiz.time_limit * 60);
+  } catch(e) { showToast('❌ Hata oluştu.'); }
+  hideLoader();
+}
 </script>
 </body>
 </html>
