@@ -701,7 +701,7 @@ async function changeMyPassword() {
       timeRemaining = currentQuiz.time_limit * 60;
       startTimer();
     }
-  } catch(e) { showToast('❌ Hata oluştu.'); }
+  } catch(e) { console.error(e); showToast('❌ Hata oluştu.'); }
   hideLoader();
 }
 </script>
