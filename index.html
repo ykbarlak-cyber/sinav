@@ -260,9 +260,11 @@ async function loginStudent(){
 function logoutStudent() { currentStudent = null; showScreen('s-landing'); }
 
 async function renderStudentDashboard() {
-  showScreen('s-student-dashboard');
   const dashContainer = document.getElementById('s-student-dashboard');
- dashContainer.innerHTML = `
+  if (!dashContainer) return;
+
+  // 1. ÜST KISIM VE HTML ÇERÇEVESİ (Şifre Değiştirme Butonu Dahil)
+  dashContainer.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
       <div style="font-weight:800; font-size:1.2rem;">🎓 Hoş geldin, <span style="color:var(--primary)">${currentStudent.name}</span> (${currentStudent.class_id}-${currentStudent.branch})</div>
       <div style="display:flex; gap:10px;">
@@ -277,8 +279,9 @@ async function renderStudentDashboard() {
             <div id="student-active-quizzes"><div class="spin" style="margin:20px auto"></div></div>
         </div>
         <div class="card" style="flex:1; border-top: 4px solid #f59e0b; min-width:300px; background:linear-gradient(135deg, #fffbeb, #fef3c7);">
-           <h3 style="margin-top:0; color:#b45309;">🏆 Liderlik Tablosu</h3>
-<div id="student-leaderboard" style="padding:10px;">Yükleniyor...</div>
+            <h3 style="margin-top:0; color:#b45309;">🏆 Liderlik Tablosu</h3>
+            <div id="student-leaderboard" style="padding:10px;"><div class="spin" style="margin:20px auto"></div></div>
+        </div>
     </div>
 
     <div class="card" style="border-top: 4px solid var(--correct);">
@@ -287,54 +290,99 @@ async function renderStudentDashboard() {
         </div>
         <div id="student-past-results"><div class="spin" style="margin:20px auto"></div></div>
     </div>
-    `;
-  const actDiv = document.getElementById('student-active-quizzes'); const pastDiv = document.getElementById('student-past-results'); const leaderDiv = document.getElementById('student-leaderboard'); const badgeDiv = document.getElementById('student-badges');
+  `;
+
+  // 2. KUTULARI BUL VE İÇİNİ DOLDUR
+  const actDiv = document.getElementById('student-active-quizzes');
+  const pastDiv = document.getElementById('student-past-results');
+  const leaderDiv = document.getElementById('student-leaderboard');
+
   try {
-    // V10.0 GÜNCELLEMESİ: Sınavları kuruma göre filtrele
-    const quizzes = await sbFetch(`quizzes?class_id=eq.${currentStudent.class_id}&branch=eq.${currentStudent.branch}&institution_id=eq.${currentInstitution.id}&order=created_at.desc`);
-    const allClassResults = await sbFetch(`quiz_results?class_id=eq.${currentStudent.class_id}&branch=eq.${currentStudent.branch}&institution_id=eq.${currentInstitution.id}`);
-
-    const myResults = allClassResults ? allClassResults.filter(r => r.student_number === currentStudent.student_number).sort((a,b) => new Date(b.created_at) - new Date(a.created_at)) : [];
-    let solvedQuizIds = myResults.map(r => r.quiz_id);
-
-    const activeQ = quizzes ? quizzes.filter(q => !solvedQuizIds.includes(q.id)) : [];
-    if(activeQ.length === 0) { actDiv.innerHTML = '<p style="color:var(--ink3); font-weight:500;">Şu an girmen gereken yeni bir sınav yok. 🎉</p>'; }
-    else {
-      window._quizMap = {}; activeQ.forEach(q => window._quizMap[q.id] = q);
-      actDiv.innerHTML = activeQ.map(q => `<div class="available-quiz" onclick="prepareStudentQuiz('${q.id}')"><div><strong>${q.name}</strong><div style="font-size:0.85rem; color:var(--ink3); margin-top:4px;">${q.questions.length} Soru | ⏳ ${q.time_limit?q.time_limit+' Dk':'Süresiz'}</div></div><button class="btn btn-primary btn-sm">Sınava Gir</button></div>`).join('');
+    // A. Aktif Sınavları Çek
+    const activeQuizzes = await sbFetch(\`quizzes?institution_id=eq.\${currentInstitution.id}&class_id=eq.\${currentStudent.class_id}&is_active=eq.true\`);
+    if (activeQuizzes.length === 0) {
+      actDiv.innerHTML = '<div style="color:var(--ink3); padding:10px 0;">Şu an aktif bir sınav bulunmuyor.</div>';
+    } else {
+      actDiv.innerHTML = activeQuizzes.map(q => \`
+        <div style="padding:12px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+          <div><strong>\${q.title}</strong> <span style="color:var(--ink3); font-size:0.9rem; margin-left:10px;">(\${q.questions.length} Soru)</span></div>
+          <button class="btn btn-primary btn-sm" onclick="startQuiz('\${q.id}')">Sınava Başla</button>
+        </div>
+      \`).join('');
     }
 
-    let totalNet = 0; let perfectScores = 0;
-    if(myResults.length === 0) { pastDiv.innerHTML = '<p style="color:var(--ink3)">Henüz çözdüğün bir sınav yok.</p>'; }
-    else {
-      pastDiv.innerHTML = myResults.map(r => {
-        totalNet += parseFloat(r.net); const qCount = r.correct + r.wrong + r.blank; if(qCount > 0 && r.correct / qCount >= 0.8) perfectScores++;
-        return `<div class="available-quiz" style="cursor:default; margin-bottom:10px;"><div><strong>${quizzes.find(q=>q.id===r.quiz_id)?.name || 'Silinmiş Sınav'}</strong><div style="font-size:0.85rem; color:var(--ink3); margin-top:4px;">Doğru: ${r.correct} | Yanlış: ${r.wrong} | Boş: ${r.blank}</div></div><div style="background:#e0e7ff; color:var(--primary); padding:6px 12px; border-radius:8px; font-weight:bold;">${parseFloat(r.net).toFixed(2)} Net</div></div>`;
-      }).join('');
+    // B. Geçmiş Sonuçları Çek
+    const pastResults = await sbFetch(\`quiz_results?student_id=eq.\${currentStudent.id}&institution_id=eq.\${currentInstitution.id}\`);
+    if (pastResults.length === 0) {
+      pastDiv.innerHTML = '<div style="color:var(--ink3); padding:10px 0;">Henüz katıldığın bir sınav yok.</div>';
+    } else {
+      pastDiv.innerHTML = \`<table style="width:100%; text-align:left; border-collapse:collapse;">
+        <tr style="border-bottom:2px solid #e2e8f0;">
+          <th style="padding:10px;">Sınav</th>
+          <th style="padding:10px;">Doğru</th>
+          <th style="padding:10px;">Yanlış</th>
+          <th style="padding:10px;">Boş</th>
+          <th style="padding:10px;">Puan</th>
+        </tr>
+        \${pastResults.map(r => \`
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:10px;">\${r.quiz_title || 'Sınav'}</td>
+            <td style="padding:10px; color:var(--correct); font-weight:bold;">\${r.correct}</td>
+            <td style="padding:10px; color:var(--wrong); font-weight:bold;">\${r.wrong}</td>
+            <td style="padding:10px; color:var(--ink3);">\${r.empty}</td>
+            <td style="padding:10px; font-weight:bold;">\${r.score ? r.score.toFixed(2) : '0.00'}</td>
+          </tr>
+        \`).join('')}
+      </table>\`;
     }
 
-    let badgesHTML = '<strong style="color:var(--ink3); font-size:0.9rem; margin-right:5px;">Rozetlerim:</strong>'; let hasBadge = false;
-    if(myResults.length >= 1) { badgesHTML += `<span title="İlk sınavını tamamladın!" style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold;">🚀 İlk Adım</span>`; hasBadge = true; }
-    if(perfectScores >= 1) { badgesHTML += `<span title="%80 başarıyı geçtin!" style="background:#fef08a; color:#854d0e; padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold;">🌟 Branşın Dehası</span>`; hasBadge = true; }
-    if(totalNet >= 20) { badgesHTML += `<span title="Toplamda 20 neti geçtin!" style="background:#e9d5ff; color:#581c87; padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold;">👑 Net Canavarı</span>`; hasBadge = true; }
-    if(!hasBadge) badgesHTML += '<span style="font-size:0.85rem; color:var(--ink3);">Sınav çözdükçe rozet kazanacaksın!</span>'; badgeDiv.innerHTML = badgesHTML;
+    // C. Liderlik Tablosunu Oluştur
+    const allClassResults = await sbFetch(\`quiz_results?institution_id=eq.\${currentInstitution.id}&class_id=eq.\${currentStudent.class_id}\`);
+    if (allClassResults.length === 0) {
+      leaderDiv.innerHTML = '<div style="color:var(--ink3); font-size:0.9rem;">Henüz sıralama oluşmadı.</div>';
+    } else {
+      const studentTotals = {};
+      allClassResults.forEach(r => {
+        if (!studentTotals[r.student_name]) studentTotals[r.student_name] = 0;
+        studentTotals[r.student_name] += (r.score || 0);
+      });
+      
+      const sortedStudents = Object.keys(studentTotals)
+        .map(name => ({ name, score: studentTotals[name] }))
+        .sort((a, b) => b.score - a.score);
 
-    if(!allClassResults || allClassResults.length === 0) { leaderDiv.innerHTML = '<p style="color:#92400e; font-size:0.95rem;">Sınıfta henüz kimse sınav çözmedi. İlk sen ol ve zirveye yerleş!</p>'; }
-    else {
-        const studentTotals = {}; allClassResults.forEach(r => { if(!studentTotals[r.student_name]) studentTotals[r.student_name] = 0; studentTotals[r.student_name] += parseFloat(r.net); });
-        const sortedStudents = Object.keys(studentTotals).map(name => ({name, net: studentTotals[name]})).sort((a,b) => b.net - a.net);
-        let leaderHTML = '<table style="width:100%; border-collapse:collapse; font-size:0.95rem;">';
-        sortedStudents.slice(0, 5).forEach((stu, index) => {
-            let medal = '🔹'; if(index === 0) medal = '🥇'; else if(index === 1) medal = '🥈'; else if(index === 2) medal = '🥉'; const isMe = stu.name === currentStudent.name;
-            leaderHTML += `<tr style="${isMe ? 'background:#fde68a; font-weight:bold; border-radius:8px;' : ''}"><td style="padding:10px 8px; border-bottom:1px solid #fde68a; color:#92400e;">${medal} ${stu.name} ${isMe ? '(Sen)' : ''}</td><td style="padding:10px 8px; border-bottom:1px solid #fde68a; text-align:right; color:#d97706; font-weight:bold;">${stu.net.toFixed(2)} Net</td></tr>`;
-        }); leaderHTML += '</table>';
-        const myRank = sortedStudents.findIndex(s => s.name === currentStudent.name) + 1;
-        if(myRank > 0) { leaderHTML += `<div style="text-align:center; margin-top:16px; font-size:1.05rem; color:#b45309; background:#fffbeb; padding:8px; border-radius:8px; border:1px solid #fde68a;">Sınıftaki Sıranız: <strong style="font-size:1.2rem;">${myRank}.</strong> / ${sortedStudents.length}</div>`; }
-        leaderDiv.innerHTML = leaderHTML;
+      let leaderHTML = '<table style="width:100%; border-collapse:collapse; font-size:0.95rem;">';
+      sortedStudents.slice(0, 5).forEach((stu, index) => {
+        let medal = '🔹';
+        if (index === 0) medal = '🥇';
+        else if (index === 1) medal = '🥈';
+        else if (index === 2) medal = '🥉';
+        
+        const isMe = stu.name === currentStudent.name;
+        leaderHTML += \`
+          <tr style="\${isMe ? 'background:#fde68a; font-weight:bold; border-radius:8px;' : ''}">
+            <td style="padding:10px 5px; text-align:center;">\${medal}</td>
+            <td style="padding:10px 5px;">\${stu.name}</td>
+            <td style="padding:10px 5px; text-align:right;">\${stu.score.toFixed(2)} Puan</td>
+          </tr>
+        \`;
+      });
+      leaderHTML += '</table>';
+
+      const myRank = sortedStudents.findIndex(s => s.name === currentStudent.name) + 1;
+      if (myRank > 0) {
+        leaderHTML += \`<div style="text-align:center; margin-top:16px; font-size:1.05rem; color:#b45309; background:#fffbeb; padding:8px; border-radius:8px;">Senin Sıralaman: <strong>\${myRank}.</strong></div>\`;
+      }
+      leaderDiv.innerHTML = leaderHTML;
     }
-  } catch(e) { console.error(e); actDiv.innerHTML = 'Hata oluştu.'; pastDiv.innerHTML = 'Hata.'; leaderDiv.innerHTML = 'Hata.'; }
+
+  } catch (e) {
+    console.error(e);
+    if(actDiv) actDiv.innerHTML = 'Hata oluştu.';
+    if(pastDiv) pastDiv.innerHTML = 'Hata.';
+    if(leaderDiv) leaderDiv.innerHTML = 'Hata.';
+  }
 }
-
 // ═══════════════════════════════════════════════
 // ÖĞRETMEN SİSTEMİ 
 // ═══════════════════════════════════════════════
