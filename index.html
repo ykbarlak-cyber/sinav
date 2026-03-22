@@ -663,13 +663,15 @@ async function changeMyPassword() {
   try {
     const res = await sbFetch(`quizzes?id=eq.${quizId}`);
     if (!res || res.length === 0) { showToast('❌ Sınav bulunamadı.'); hideLoader(); return; }
-    const quiz = res[0];
-    currentQuiz = quiz;
-    currentAnswers = new Array(quiz.questions.length).fill(null);
-    currentQIndex = 0;
+    currentQuiz = res[0];
+    quizAnswers = {};
+    currentQIdx = 0;
     showScreen('s-quiz');
-    renderQuestion();
-    if (quiz.time_limit) startTimer(quiz.time_limit * 60);
+    renderQCard();
+    if (currentQuiz.time_limit) {
+      timeRemaining = currentQuiz.time_limit * 60;
+      startTimer();
+    }
   } catch(e) { showToast('❌ Hata oluştu.'); }
   hideLoader();
 }
