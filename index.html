@@ -265,12 +265,15 @@ async function renderStudentDashboard() {
   dashContainer.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
-      <div style="font-weight:800; font-size:1.2rem;">🎓 Hoş geldin, <span style="color:var(--primary)">${currentStudent.name}</span> (${currentStudent.class_id}-${currentStudent.branch})</div>
-      <div style="display:flex; gap:10px;">
-        <button class="btn btn-secondary btn-sm" onclick="changeStudentPassword()">🔑 Şifre Değiştir</button>
-        <button class="btn btn-danger btn-sm" onclick="logoutStudent()">Çıkış Yap</button>
-      </div>
-    </div>
+     `
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+  <div style="font-weight:800; font-size:1.2rem;">🎓 Hoş geldin, <span style="color:var(--primary)">${currentStudent.name}</span> (${currentStudent.class_id}-${currentStudent.branch})</div>
+  <div style="display:flex; gap:10px;">
+    <button class="btn btn-secondary btn-sm" onclick="changeStudentPassword()">🔑 Şifre Değiştir</button>
+    <button class="btn btn-danger btn-sm" onclick="logoutStudent()">Çıkış Yap</button>
+  </div>
+</div>
+`;
     <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
         <div class="card" style="flex:2; border-top: 4px solid var(--primary); min-width:300px;"><h3 style="margin-top:0"><span class="emoji" style="font-size:1.5rem;display:inline;">📝</span> Girmem Gereken Sınavlar</h3><div id="student-active-quizzes"><div class="spin" style="margin:20px auto"></div></div></div>
         <div class="card" style="flex:1; border-top: 4px solid #f59e0b; min-width:300px; background:linear-gradient(135deg, #fffbeb, #fef3c7);"><h3 style="margin-top:0; color:#d97706;"><span class="emoji" style="font-size:1.5rem;display:inline;">🏆</span> Sınıf Liderlik Tablosu</h3><p style="font-size:0.85rem; color:#92400e; margin-top:-10px; margin-bottom:15px;">Toplam netlere göre sınıfın en iyileri</p><div id="student-leaderboard"><div class="spin" style="margin:20px auto"></div></div></div>
