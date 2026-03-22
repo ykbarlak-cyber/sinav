@@ -404,16 +404,23 @@ async function renderQuizListTab(){
     let url = `quizzes?class_id=eq.${activeClassId}&branch=eq.${activeBranch}&order=created_at.desc`;
     if(!currentTeacher.is_admin) url += `&teacher_name=eq.${currentTeacher.name}`;
     const quizzes = await sbFetch(url);
-    if(!quizzes || quizzes.length===0){ tb.innerHTML=`<div class="card" style="text-align:center; padding:50px;"><h3>Bu şubeye ait sınav bulunamadı.</h3></div>`; return; }
+    if(!quizzes || quizzes.length===0){ tb.innerHTML=`<div class="card" style="text-align:center; padding:50px;"><div class="emoji" style="font-size:3rem">📭</div><h3 style="color:var(--ink3)">Bu şubeye ait sınav bulunamadı.</h3></div>`; return; }
+    
     tb.innerHTML=`<div class="q-list">${quizzes.map(q=>
       `<div class="quiz-card">
-        <div style="flex:1; padding-right:20px;"><h3 style="margin:0 0 8px 0; color:var(--primary);">${q.name}</h3>
-        <div style="color:var(--ink3); font-size:0.95rem;">Oluşturan: ${q.teacher_name} | ${q.questions.length} Soru | ⏳ ${q.time_limit?q.time_limit+' Dk':'Süresiz'}</div></div>
-        <div style="display:flex;gap:10px;"><button class="btn btn-secondary" onclick="viewQuizResults('${q.id}', '${q.name}')">📊 Analiz</button><button class="btn btn-excel" onclick="downloadExcel('${q.id}', '${q.name}')">📥 Excel Raporu</button><button class="btn btn-danger" onclick="deleteQuizById('${q.id}')">Sil</button></div>
+        <div style="flex:1; padding-right:20px;">
+          <h3 style="margin:0 0 8px 0; font-size:1.2rem; color:var(--primary);">${q.name}</h3>
+          <div style="color:var(--ink3); font-size:0.95rem; font-weight:500;">Oluşturan: ${q.teacher_name} &nbsp;|&nbsp; Soru Sayısı: ${q.questions.length} &nbsp;|&nbsp; ⏳ Süre: ${q.time_limit?q.time_limit+' Dk':'Süresiz'}</div>
+        </div>
+        <div style="display:flex;gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+          <button class="btn btn-secondary btn-sm" onclick="viewQuizResults('${q.id}', '${q.name}')">📊 Notlar</button>
+          <button class="btn btn-excel btn-sm" onclick="downloadExcel('${q.id}', '${q.name}')">📥 Excel</button>
+          <button class="btn btn-ai btn-sm" onclick="getAIClassReport('${q.id}', '${q.name}')">✨ AI Sınıf Raporu</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteQuizById('${q.id}')">Sil</button>
+        </div>
       </div>`).join('')}</div>`;
-  } catch(e){ tb.innerHTML=`Hata`; }
+  } catch(e){ tb.innerHTML=`<p>Hata: ${e.message}</p>`; }
 }
-
 async function viewQuizResults(quizId, quizName) {
   showLoader('Sonuçlar getiriliyor...');
   try {
@@ -558,6 +565,47 @@ async function askAI(qIndex) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "text/plain" } }) });
     const data = await res.json(); box.innerHTML = `<strong>✨ Yapay Zeka:</strong><br>${data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}`;
   } catch(e) { box.innerHTML = '❌ Yapay zekaya bağlanılamadı.'; }
+}
+// --- YAPAY ZEKA SINIF RAPORU SİSTEMİ ---
+async function getAIClassReport(quizId, quizName) {
+  showLoader('Yapay Zeka Sınıf Sonuçlarını Analiz Ediyor (Bu işlem 10-15 saniye sürebilir)...');
+  try {
+    const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`);
+    if(!results || results.length === 0) {
+        hideLoader();
+        return showToast('⚠️ Bu sınava henüz hiçbir öğrenci girmemiş.');
+    }
+
+    // Öğrencilerin netlerini metne döküyoruz
+    let statsText = results.map(r => `${r.student_name}: ${r.correct} Doğru, ${r.wrong} Yanlış, Net: ${parseFloat(r.net).toFixed(2)}`).join('\n');
+
+    const prompt = `Sen uzman bir Eğitim Danışmanı ve Veri Analistisin. Öğretmenin hazırladığı "${quizName}" adlı sınavın sınıf sonuçları aşağıdadır:\n\n${statsText}\n\nLütfen bu verilere bakarak öğretmene hitaben ("Değerli Hocam" şeklinde başlayarak) kısa, profesyonel ve motive edici bir sınıf başarı analizi raporu yaz. Hangi öğrenciler çok başarılı, hangileri biraz daha desteklenmeli ve sınıfın genel ortalaması/durumu nasıl? Markdown formatında kalın yazılar ve madde imleri kullanarak şık bir şekilde sun.`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "text/plain" } })
+    });
+    const data = await res.json();
+    const aiText = data.candidates[0].content.parts[0].text;
+
+    // Raporu Ekrana Çiz
+    document.getElementById('tab-body').innerHTML = `
+      <div class="card" style="border: 2px solid #8b5cf6;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px;">
+            <h2 style="color:#6d28d9; margin:0;"><span class="emoji" style="display:inline; font-size:1.5rem; margin-right:8px;">✨</span> Yapay Zeka Sınıf Raporu: ${quizName}</h2>
+            <button class="btn btn-ghost" onclick="switchTab('quizzes')">← Sınavlara Dön</button>
+        </div>
+        <div style="background:#faf5ff; padding:24px; border-radius:10px; line-height:1.7; font-size:1.1rem; color:#4c1d95; margin-top:20px;">
+            ${aiText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    showToast('❌ Yapay zeka ile bağlantı kurulamadı.');
+  } finally {
+    hideLoader();
+  }
 }
 </script>
 </body>
