@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Online Sınav Platformu V7.1 - Kurumsal</title>
+<title>Online Sınav Platformu V8.2 - Zirve Sürümü</title>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
   :root { --primary: #4f46e5; --primary-hover: #4338ca; --bg: #f4f7f6; --ink: #1e293b; --ink3: #64748b; --border: #e2e8f0; --correct: #10b981; --wrong: #ef4444; --sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); }
@@ -19,6 +19,7 @@
   .btn-secondary { background: #e2e8f0; color: var(--ink); }
   .btn-danger { background: #fee2e2; color: #b91c1c; }
   .btn-excel { background: #10b981; color: white; }
+  .btn-ai { background: #8b5cf6; color: white; }
   .btn-sm { padding: 6px 12px; font-size: 0.85rem; border-radius: 8px; }
   
   .field input, .field select, .field textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin-top: 6px; box-sizing: border-box; font-size: 1rem; transition: border 0.2s; }
@@ -105,7 +106,7 @@
 
 <div class="screen" id="s-teacher">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-    <div style="font-weight:800; font-size:1.2rem; color:var(--ink);">Sınav Merkezi <span style="color:var(--primary)">V7.1</span></div>
+    <div style="font-weight:800; font-size:1.2rem; color:var(--ink);">Sınav Merkezi <span style="color:var(--primary)">V8.2</span></div>
     <div style="display:flex; align-items:center; gap:16px;">
       <div style="font-weight:600; color:var(--ink3);" id="teacher-welcome"></div>
       <button class="btn btn-danger btn-sm" onclick="logoutTeacher()">Çıkış Yap</button>
@@ -176,7 +177,7 @@
 // ═══════════════════════════════════════════════
 // AYARLAR (ŞİFRELERİNİ BURAYA YAPIŞTIR)
 // ═══════════════════════════════════════════════
-const SUPABASE_URL = "https://uwjanizsyhihlenywqbo.supabase.co"; 
+const SUPABASE_URL = "BURAYA_UZUN_SUPABASE_SIFRESI_GELECEK"; 
 const SUPABASE_KEY = "sb_publishable_1X-nEOI-GBvyisJMbrmHpw_ANXxGafx"; 
 const GEMINI_API_KEY = "AIzaSyBOvmLNACzw" + "U4xRrJbNnNdyhagNpCcTcB4"; 
 
@@ -297,7 +298,7 @@ function renderTeacherPanel(){
 
 function switchTab(t){ teacherTab=t; renderTeacherPanel(); }
 
-// --- YENİ EKLENEN ÖĞRENCİ YÖNETİMİ SEKMESİ (TOPLU EKLEME KURŞUNGEÇİRMEZ V7.1) ---
+// --- ÖĞRENCİ YÖNETİMİ ---
 async function renderStudentsTab(){
   const tb = document.getElementById('tab-body');
   tb.innerHTML = `
@@ -309,15 +310,13 @@ async function renderStudentsTab(){
         <div class="field"><label>Şifre</label><input type="text" id="add-s-pw" placeholder="Örn: 1234"></div>
         <button class="btn btn-primary" style="margin-top:16px; width:100%;" onclick="addStudent()">Tekli Ekle</button>
       </div>
-
       <div class="card" style="flex:2; border:1px solid var(--correct); min-width:300px;">
         <h3 style="margin-top:0; color:var(--correct);">📥 Excel'den Toplu Ekle (Kopyala-Yapıştır)</h3>
         <p style="color:var(--ink3); font-size:0.9rem; margin-bottom:10px;">Excel'den 3 sütunu (<strong>Ad Soyad, Okul No, Şifre</strong>) yan yana seçip kopyalayın ve aşağıdaki kutuya yapıştırın.</p>
-        <textarea id="bulk-students-data" rows="5" placeholder="Ahmet Yılmaz    105    1234&#10;Ayşe Kaya       106    1234&#10;Mehmet Demir    107    1234" style="width:100%; padding:12px; border:1px dashed var(--correct); border-radius:8px; resize:vertical; font-family:monospace;"></textarea>
+        <textarea id="bulk-students-data" rows="5" placeholder="Ahmet Yılmaz    105    1234&#10;Ayşe Kaya       106    1234" style="width:100%; padding:12px; border:1px dashed var(--correct); border-radius:8px; resize:vertical; font-family:monospace;"></textarea>
         <button class="btn btn-excel" style="margin-top:16px; width:100%; font-size:1.1rem;" onclick="bulkAddStudents()">🚀 Yapıştırılanları Toplu Kaydet</button>
       </div>
     </div>
-
     <div class="card">
       <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">📋 Sınıf Listesi</h3>
       <div id="student-list-area"><div class="spin" style="margin:20px auto"></div></div>
@@ -348,34 +347,21 @@ async function addStudent() {
 async function bulkAddStudents() {
   const rawData = document.getElementById('bulk-students-data').value.trim();
   if(!rawData) return showToast('⚠️ Lütfen veriyi kutuya yapıştırın.');
-  
-  const lines = rawData.split('\n');
-  const newStudents = [];
-  
+  const lines = rawData.split('\n'); const newStudents = [];
   for(let line of lines) {
     if(!line.trim()) continue; 
-    
-    // Satırı İSTİSNASIZ bütün boşluklardan parçala
     const tokens = line.trim().split(/\s+/);
-    
-    // En az 3 parça (Ad, No, Şifre) varsa işleme al
     if(tokens.length >= 3) {
-      const password = tokens.pop(); 
-      const student_number = tokens.pop(); 
-      const name = tokens.join(' '); 
-      
+      const password = tokens.pop(); const student_number = tokens.pop(); const name = tokens.join(' '); 
       newStudents.push({ name: name, student_number: student_number, password: password, class_id: activeClassId, branch: activeBranch });
     }
   }
-  
   if(newStudents.length === 0) { return showToast('❌ Hata: İsim, Numara ve Şifre arasında boşluk olmalı.'); }
-  
   showLoader(newStudents.length + ' Öğrenci Sisteme Yükleniyor...');
   try {
     await sbFetch('students', { method: 'POST', body: JSON.stringify(newStudents) });
     showToast('🎉 ' + newStudents.length + ' Öğrenci Başarıyla Eklendi!');
-    document.getElementById('bulk-students-data').value = '';
-    loadStudentList();
+    document.getElementById('bulk-students-data').value = ''; loadStudentList();
   } catch(e) { showToast('❌ Kayıt hatası! Listede kayıtlı numara olabilir.'); } finally { hideLoader(); }
 }
 
@@ -383,8 +369,8 @@ async function deleteStudent(id) {
   if(!confirm('Öğrenciyi silmek istediğinize emin misiniz?')) return; showLoader('Siliniyor...');
   try { await sbFetch(`students?id=eq.${id}`, { method: 'DELETE' }); loadStudentList(); showToast('Silindi.'); } catch(e) { showToast('Hata'); } finally { hideLoader(); }
 }
-// ----------------------------------------------
 
+// --- İSTATİSTİKLER ---
 async function renderStatsTab(){
   const tb = document.getElementById('tab-body'); tb.innerHTML = '<div class="spin" style="margin:40px auto"></div>';
   try {
@@ -398,20 +384,18 @@ async function renderStatsTab(){
   } catch(e) { tb.innerHTML=`<div class="card"><p>Hata</p></div>`; }
 }
 
+// --- SINAV LİSTESİ ---
 async function renderQuizListTab(){
   const tb=document.getElementById('tab-body'); tb.innerHTML='<div class="spin" style="margin:40px auto"></div>';
   try{
     let url = `quizzes?class_id=eq.${activeClassId}&branch=eq.${activeBranch}&order=created_at.desc`;
     if(!currentTeacher.is_admin) url += `&teacher_name=eq.${currentTeacher.name}`;
     const quizzes = await sbFetch(url);
-    if(!quizzes || quizzes.length===0){ tb.innerHTML=`<div class="card" style="text-align:center; padding:50px;"><div class="emoji" style="font-size:3rem">📭</div><h3 style="color:var(--ink3)">Bu şubeye ait sınav bulunamadı.</h3></div>`; return; }
-    
+    if(!quizzes || quizzes.length===0){ tb.innerHTML=`<div class="card" style="text-align:center; padding:50px;"><h3>Bu şubeye ait sınav bulunamadı.</h3></div>`; return; }
     tb.innerHTML=`<div class="q-list">${quizzes.map(q=>
       `<div class="quiz-card">
-        <div style="flex:1; padding-right:20px;">
-          <h3 style="margin:0 0 8px 0; font-size:1.2rem; color:var(--primary);">${q.name}</h3>
-          <div style="color:var(--ink3); font-size:0.95rem; font-weight:500;">Oluşturan: ${q.teacher_name} &nbsp;|&nbsp; Soru Sayısı: ${q.questions.length} &nbsp;|&nbsp; ⏳ Süre: ${q.time_limit?q.time_limit+' Dk':'Süresiz'}</div>
-        </div>
+        <div style="flex:1; padding-right:20px;"><h3 style="margin:0 0 8px 0; color:var(--primary);">${q.name}</h3>
+        <div style="color:var(--ink3); font-size:0.95rem;">Oluşturan: ${q.teacher_name} | ${q.questions.length} Soru | ⏳ ${q.time_limit?q.time_limit+' Dk':'Süresiz'}</div></div>
         <div style="display:flex;gap:10px; flex-wrap:wrap; justify-content:flex-end;">
           <button class="btn btn-secondary btn-sm" onclick="viewQuizResults('${q.id}', '${q.name}')">📊 Notlar</button>
           <button class="btn btn-excel btn-sm" onclick="downloadExcel('${q.id}', '${q.name}')">📥 Excel</button>
@@ -419,8 +403,9 @@ async function renderQuizListTab(){
           <button class="btn btn-danger btn-sm" onclick="deleteQuizById('${q.id}')">Sil</button>
         </div>
       </div>`).join('')}</div>`;
-  } catch(e){ tb.innerHTML=`<p>Hata: ${e.message}</p>`; }
+  } catch(e){ tb.innerHTML=`Hata`; }
 }
+
 async function viewQuizResults(quizId, quizName) {
   showLoader('Sonuçlar getiriliyor...');
   try {
@@ -441,6 +426,7 @@ async function downloadExcel(quizId, quizName) {
 
 async function deleteQuizById(id){ if(!confirm('Silinsin mi?')) return; showLoader('Siliniyor...'); try{ await sbFetch(`quizzes?id=eq.${id}`, { method: 'DELETE' }); renderTeacherPanel(); } catch(e){} finally{ hideLoader(); } }
 
+// --- YENİ SINAV OLUŞTURMA & YÜKLEME ---
 function renderNewQuizTab(){
   const tb=document.getElementById('tab-body'); const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
   tb.innerHTML= `<div class="card" style="display:flex; gap:16px; align-items:flex-end;">
@@ -455,23 +441,20 @@ function renderNewQuizTab(){
         <input type="file" id="file-inp" accept=".pdf,.txt" onchange="handleFile(this)" style="margin-bottom:10px; width:100%; padding:8px; border:1px dashed var(--primary); border-radius:8px;" />
         <button class="btn btn-primary" style="width:100%;" onclick="extractFromFile()">✨ Otomatik Çıkar</button>
       </div>
-
       <div class="card" style="flex:1; margin-bottom:0; min-width:250px; border-top:3px solid #f59e0b; display:flex; flex-direction:column; justify-content:space-between;">
         <h3 style="margin-top:0; color:#d97706;">🖼️ Toplu Ekran Görüntüsü</h3>
         <p style="color:var(--ink3); font-size:0.85rem;">Testin 30 sorusunu (fotoğrafını) aynı anda seçin, sistem 30 soruluk taslağı otomatik dizsin!</p>
         <label class="btn" style="width:100%; padding:10px; text-align:center; cursor:pointer; background:#f59e0b; color:white; border-radius:10px; font-weight:bold;">
-          📁 Resimleri Seç ve Toplu Yükle
+          📁 Resimleri Seç ve Yükle
           <input type="file" style="display:none;" accept="image/*" multiple onchange="bulkUploadImages(this)">
         </label>
       </div>
-
       <div class="card" style="flex:1; margin-bottom:0; min-width:250px; border-top:3px solid var(--correct); display:flex; flex-direction:column; justify-content:space-between;">
         <h3 style="margin-top:0; color:var(--correct);">✍️ Tekli Boş Soru</h3>
         <p style="color:var(--ink3); font-size:0.85rem;">Sadece metinle veya tek bir resimle sıfırdan soru yazmak için.</p>
         <button class="btn btn-excel" style="width:100%; padding:10px;" onclick="addManualDraftQ()">➕ Boş Soru Ekle</button>
       </div>
     </div>
-
     <div class="card"><h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">📋 Sınav Önizlemesi (Düzenlenebilir)</h3><div id="draft-q-list"></div></div>
     <button class="btn btn-primary" style="width:100%; font-size:1.2rem; padding:16px; margin-bottom:40px; background:#1e293b;" onclick="saveQuiz()">💾 Sınavı Kaydet ve Yayınla</button>`;
   renderDraftQ();
@@ -483,35 +466,20 @@ function addManualDraftQ() {
   renderDraftQ();
 }
 
-// YENİ: TOPLU RESİM YÜKLEME FONKSİYONU
 async function bulkUploadImages(input) {
-  const files = input.files;
-  if (!files || files.length === 0) return;
+  const files = input.files; if (!files || files.length === 0) return;
   const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
-  
   for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    showLoader(`Toplu Yükleme: ${i+1} / ${files.length} resim buluta işleniyor...`);
+    const file = files[i]; showLoader(`Toplu Yükleme: ${i+1} / ${files.length} resim buluta işleniyor...`);
     const ext = file.name.split('.').pop(); const fileName = Date.now() + '_' + Math.random().toString(36).substr(2,5) + '.' + ext;
-    
     try {
-      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/quiz-images/${fileName}`, {
-        method: 'POST', headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY, 'Content-Type': file.type }, body: file
-      });
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/quiz-images/${fileName}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY, 'Content-Type': file.type }, body: file });
       if (!res.ok) throw new Error(await res.text());
       const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/quiz-images/${fileName}`;
-      
-      // Resim başarıyla yüklendiğinde listeye anında yeni bir soru bloğu ekle
-      draftQuestions.push({
-        text: "Yukarıdaki görsele göre doğru seçeneği işaretleyiniz.", // Varsayılan metin
-        options: Array(optCount).fill(""), // Şıklar boş (Sadece A,B,C harfleri görünecek)
-        correct: 0, // Varsayılan cevap A
-        image: imageUrl
-      });
+      draftQuestions.push({ text: "Yukarıdaki görsele göre doğru seçeneği işaretleyiniz.", options: Array(optCount).fill(""), correct: 0, image: imageUrl });
     } catch(e) { alert(`Hata (${file.name}): ` + e.message); }
   }
-  
-  hideLoader(); input.value = ''; showToast(`✅ ${files.length} adet resim başarıyla sınav taslağına eklendi!`); renderDraftQ();
+  hideLoader(); input.value = ''; showToast(`✅ ${files.length} adet resim eklendi!`); renderDraftQ();
 }
 
 function handleFile(input){
@@ -526,7 +494,7 @@ async function extractFromFile(){
     const optCount = isMiddleSchool(activeClassId) ? 4 : 5; const exampleOpts = optCount === 4 ? '"A Şıkkı","B Şıkkı","C Şıkkı","D Şıkkı"' : '"A Şıkkı","B Şıkkı","C Şıkkı","D Şıkkı","E Şıkkı"';
     const parts = []; if(pdfB64) parts.push({ inlineData: { mimeType: "application/pdf", data: pdfB64 } }); else parts.push({ text: txtContent }); parts.push({ text: `Çoktan seçmeli soruları çıkar. SADECE JSON dizisi döndür: [{"text":"Soru","options":[${exampleOpts}],"correct":0}]` });
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { responseMimeType: "application/json" } }) });
-    const data = await res.json(); draftQuestions=[...draftQuestions,...JSON.parse(data.candidates[0].content.parts[0].text.trim())]; renderDraftQ(); showToast(`✅ Sorular eklendi! Şıkları ve metinleri düzenleyebilirsiniz.`);
+    const data = await res.json(); draftQuestions=[...draftQuestions,...JSON.parse(data.candidates[0].content.parts[0].text.trim())]; renderDraftQ(); showToast(`✅ Sorular eklendi! Düzenleyebilirsiniz.`);
   } catch(e){ alert(`HATA:\n\n${e.message}`); } finally{ hideLoader(); }
 }
 
@@ -545,15 +513,15 @@ function renderDraftQ(){
   list.innerHTML=draftQuestions.map((q,i)=> `<div class="card" style="border-left: 5px solid var(--primary); background:#f8fafc;">
     <div style="display:flex; align-items:center;">
       <strong style="width:70px; color:var(--ink);">Soru ${i+1}:</strong> 
-      <input type="text" class="field" style="flex:1; margin:0; padding:10px; font-weight:bold;" value="${(q.text || '').replace(/"/g, '&quot;')}" placeholder="Soru metnini buraya yazın..." onchange="draftQuestions[${i}].text=this.value">
+      <input type="text" class="field" style="flex:1; margin:0; padding:10px; font-weight:bold;" value="${(q.text || '').replace(/"/g, '&quot;')}" placeholder="Soru metni..." onchange="draftQuestions[${i}].text=this.value">
     </div>
-    ${q.image ? `<img src="${q.image}" style="max-height:300px; width:auto; margin-top:16px; border-radius:10px; border:1px solid var(--border);">` : ''}
+    ${q.image ? `<img src="${q.image}" style="max-height:250px; margin-top:16px; border-radius:10px; border:1px solid var(--border);">` : ''}
     <div style="margin-top:16px; background:white; padding:16px; border-radius:8px; border:1px solid var(--border);">
       ${q.options.map((o,j)=>`
         <div style="display:flex; align-items:center; margin-bottom:10px;">
           <input type="radio" name="correct_${i}" ${j===q.correct?'checked':''} onchange="draftQuestions[${i}].correct=${j}" style="cursor:pointer; width:18px; height:18px;">
           <strong style="margin:0 12px; font-size:1.1rem; color:var(--ink3);">${LETTERS[j]})</strong> 
-          <input type="text" class="field" style="flex:1; margin:0; padding:8px;" value="${(o || '').replace(/"/g, '&quot;')}" placeholder="Şık metni (Fotoğraflı sorularda boş bırakabilirsiniz)" onchange="draftQuestions[${i}].options[${j}]=this.value">
+          <input type="text" class="field" style="flex:1; margin:0; padding:8px;" value="${(o || '').replace(/"/g, '&quot;')}" placeholder="Şık metni" onchange="draftQuestions[${i}].options[${j}]=this.value">
         </div>
       `).join('')}
     </div>
@@ -563,6 +531,7 @@ function renderDraftQ(){
     </div></div>`).join('');
 }
 function removeDraftQ(i){ draftQuestions.splice(i,1); renderDraftQ(); }
+
 async function saveQuiz(){
   const name=document.getElementById('new-quiz-name').value.trim(); const timeLimit=parseInt(document.getElementById('new-quiz-time').value) || 0;
   if(!name || draftQuestions.length===0){ showToast('⚠️ Sınav adı ve soru gerekli.'); return; } showLoader('Kaydediliyor...');
@@ -635,7 +604,7 @@ async function askAI(qIndex) {
     const data = await res.json(); box.innerHTML = `<strong>✨ Yapay Zeka:</strong><br>${data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}`;
   } catch(e) { box.innerHTML = '❌ Yapay zekaya bağlanılamadı.'; }
 }
-// --- YAPAY ZEKA SINIF RAPORU SİSTEMİ ---
+
 // --- YAPAY ZEKA SINIF RAPORU SİSTEMİ ---
 async function getAIClassReport(quizId, quizName) {
   showLoader('Yapay Zeka Sınıf Sonuçlarını Analiz Ediyor (10-15 saniye sürebilir)...');
@@ -645,7 +614,6 @@ async function getAIClassReport(quizId, quizName) {
 
     let statsText = results.map(r => `${r.student_name}: ${r.correct} Doğru, ${r.wrong} Yanlış, Net: ${parseFloat(r.net).toFixed(2)}`).join('\n');
 
-    // İMZA VE HİTAP BURADA DEĞİŞTİ!
     const prompt = `Sen uzman bir Eğitim Danışmanı ve Veri Analistisin. Sınav: "${quizName}". Sonuçlar:\n\n${statsText}\n\nLütfen "Değerli Yüksel Hocam" diyerek başla. Öğrenci başarılarını, eksiklerini ve sınıf genelini profesyonelce analiz et. Raporun EN ALTINA imza olarak tam olarak şunu yaz: "Saygılarımla, Yüksel Hoca'nın Yapay Zeka Eğitim Asistanı"`;
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "text/plain" } }) });
@@ -653,38 +621,6 @@ async function getAIClassReport(quizId, quizName) {
 
     document.getElementById('tab-body').innerHTML = `<div class="card" style="border: 2px solid #8b5cf6;"><div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px;"><h2 style="color:#6d28d9; margin:0;"><span class="emoji" style="display:inline; font-size:1.5rem; margin-right:8px;">✨</span> Yapay Zeka Sınıf Raporu: ${quizName}</h2><button class="btn btn-ghost" onclick="switchTab('quizzes')">← Sınavlara Dön</button></div><div style="background:#faf5ff; padding:24px; border-radius:10px; line-height:1.7; font-size:1.1rem; color:#4c1d95; margin-top:20px;">${aiText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div></div>`;
   } catch(e) { showToast('❌ Yapay zeka ile bağlantı kurulamadı.'); } finally { hideLoader(); }
-}
-
-    // Öğrencilerin netlerini metne döküyoruz
-    let statsText = results.map(r => `${r.student_name}: ${r.correct} Doğru, ${r.wrong} Yanlış, Net: ${parseFloat(r.net).toFixed(2)}`).join('\n');
-
-    const prompt = `Sen uzman bir Eğitim Danışmanı ve Veri Analistisin. Öğretmenin hazırladığı "${quizName}" adlı sınavın sınıf sonuçları aşağıdadır:\n\n${statsText}\n\nLütfen bu verilere bakarak öğretmene hitaben ("Değerli Hocam" şeklinde başlayarak) kısa, profesyonel ve motive edici bir sınıf başarı analizi raporu yaz. Hangi öğrenciler çok başarılı, hangileri biraz daha desteklenmeli ve sınıfın genel ortalaması/durumu nasıl? Markdown formatında kalın yazılar ve madde imleri kullanarak şık bir şekilde sun.`;
-
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "text/plain" } })
-    });
-    const data = await res.json();
-    const aiText = data.candidates[0].content.parts[0].text;
-
-    // Raporu Ekrana Çiz
-    document.getElementById('tab-body').innerHTML = `
-      <div class="card" style="border: 2px solid #8b5cf6;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px;">
-            <h2 style="color:#6d28d9; margin:0;"><span class="emoji" style="display:inline; font-size:1.5rem; margin-right:8px;">✨</span> Yapay Zeka Sınıf Raporu: ${quizName}</h2>
-            <button class="btn btn-ghost" onclick="switchTab('quizzes')">← Sınavlara Dön</button>
-        </div>
-        <div style="background:#faf5ff; padding:24px; border-radius:10px; line-height:1.7; font-size:1.1rem; color:#4c1d95; margin-top:20px;">
-            ${aiText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-        </div>
-      </div>
-    `;
-  } catch(e) {
-    showToast('❌ Yapay zeka ile bağlantı kurulamadı.');
-  } finally {
-    hideLoader();
-  }
 }
 </script>
 </body>
