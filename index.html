@@ -428,24 +428,12 @@ async function checkPw(){
 function logoutTeacher() { currentTeacher = null; showScreen('s-landing'); }
 
 function renderTeacherSidebar(){
-  const sb = document.getElementById('teacher-sidebar');
-  sb.innerHTML = `
-    <h3>Sınıf & Şube Seç</h3>
-    <div style="margin-bottom:16px;">
-      <label style="color:#94a3b8; font-size:0.85rem; font-weight:600; display:block; margin-bottom:8px;">SINIF</label>
-      <select id="class-select" onchange="updateBranchSelect()" style="width:100%; padding:10px; border-radius:8px; border:none; background:rgba(255,255,255,0.1); color:white; font-size:1rem; cursor:pointer;">
-        <option value="">-- Sınıf Seçin --</option>
-        ${CLASS_DEFS.map(cls => `<option value="${cls.id}">${cls.icon} ${cls.label}</option>`).join('')}
-      </select>
-    </div>
-    <div style="margin-bottom:16px;">
-      <label style="color:#94a3b8; font-size:0.85rem; font-weight:600; display:block; margin-bottom:8px;">ŞUBE</label>
-      <select id="branch-select" style="width:100%; padding:10px; border-radius:8px; border:none; background:rgba(255,255,255,0.1); color:white; font-size:1rem; cursor:pointer;">
-        <option value="">-- Önce Sınıf Seçin --</option>
-      </select>
-    </div>
-    <button class="btn btn-primary" style="width:100%; padding:12px; font-size:1rem;" onclick="goToClass()">➜ Panele Git</button>
-  `;
+  const sel = document.getElementById('class-select');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">-- Sınıf Seçin --</option>';
+  CLASS_DEFS.forEach(cls => {
+    sel.innerHTML += `<option value="${cls.id}">${cls.icon} ${cls.label}</option>`;
+  });
 }
 
 function updateBranchSelect(){
