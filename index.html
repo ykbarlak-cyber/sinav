@@ -206,7 +206,9 @@ const BRANCHES = ['A','B','C']; const LETTERS  = ['A','B','C','D','E'];
 let currentInstitution = null; 
 let currentTeacher = null; 
 let currentStudent = null;
-
+let currentQuiz = null;
+let currentAnswers = [];
+let currentQIndex = 0;
 function isMiddleSchool(classId) { return ['6', '7', '8'].includes(classId); }
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 function showLoader(txt='Yükleniyor...'){ document.getElementById('loader-txt').textContent=txt; document.getElementById('loader').classList.add('show'); }
