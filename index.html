@@ -116,7 +116,6 @@
     <div class="field"><input type="text" id="t-name" placeholder="Kullanıcı Adı" /></div>
     <div class="field" style="margin-top:12px;"><input type="password" id="t-pw" placeholder="Şifre" onkeydown="if(event.key==='Enter')checkPw()" /></div>
     <button class="btn btn-primary" style="width:100%; margin-top:24px; padding:14px; font-size:1.1rem;" onclick="checkPw()">Giriş Yap</button>
-    <button class="btn btn-secondary" style="width:100%; margin-top:12px; font-weight:bold; color:var(--primary);" onclick="showScreen('s-teacher-register')">📝 Yeni Öğretmen Kaydı</button>
     <button class="btn btn-ghost" style="width:100%; margin-top:12px" onclick="showScreen('s-landing')">← Geri</button>
   </div>
 </div>
@@ -396,19 +395,75 @@ async function bulkAddStudents() {
 async function deleteStudent(id) { if(!confirm('Silinsin mi?')) return; showLoader('Siliniyor...'); try { await sbFetch(`students?id=eq.${id}`, { method: 'DELETE' }); loadStudentList(); } catch(e) {} finally { hideLoader(); } }
 
 // --- İSTATİSTİKLER ---
+// --- 👑 ADMİN PERSONEL YÖNETİM PANELİ ---
 async function renderStatsTab(){
-  const tb = document.getElementById('tab-body'); tb.innerHTML = '<div class="spin" style="margin:40px auto"></div>';
+  const tb = document.getElementById('tab-body'); 
+  tb.innerHTML = '<div class="spin" style="margin:40px auto"></div>';
   try {
-    const teachers = await sbFetch(`teachers?institution_id=eq.${currentInstitution.id}&order=last_login.desc.nullslast`); const quizzes = await sbFetch(`quizzes?institution_id=eq.${currentInstitution.id}&select=id,teacher_name`);
-    let html = `<div class="card"><h3>📊 Personel Aktiviteleri</h3><div style="overflow-x:auto;"><table><tr><th>Öğretmen Adı</th><th>Oluşturduğu Sınav</th><th>Son Giriş Tarihi</th></tr>`;
+    const teachers = await sbFetch(`teachers?institution_id=eq.${currentInstitution.id}&order=last_login.desc.nullslast`); 
+    const quizzes = await sbFetch(`quizzes?institution_id=eq.${currentInstitution.id}&select=id,teacher_name`);
+    
+    let html = `
+    <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; margin-bottom:20px;">
+        <div class="card" style="flex:1; background:#f8fafc; border-top:4px solid var(--primary); min-width:300px;">
+            <h3 style="margin-top:0; color:var(--primary);">👨‍🏫 Yeni Öğretmen Ekle</h3>
+            <div class="field"><label>Öğretmen Adı Soyadı</label><input type="text" id="new-t-name" placeholder="Örn: Ayşe Hoca"></div>
+            <div class="field"><label>Giriş Şifresi</label><input type="password" id="new-t-pw" placeholder="Örn: 1234"></div>
+            <div style="margin-top:12px; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="new-t-admin" style="width:18px; height:18px; cursor:pointer;"> 
+                <label for="new-t-admin" style="font-weight:600; cursor:pointer; color:var(--ink3);">Yönetici (Admin) Yetkisi Ver</label>
+            </div>
+            <button class="btn btn-primary" style="margin-top:16px; width:100%;" onclick="addTeacher()">Kaydet ve Ekle</button>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">🏢 Kurum Personel Listesi</h3>
+        <div style="overflow-x:auto;">
+            <table>
+                <tr><th>Öğretmen Adı</th><th>Yetki</th><th>Oluşturduğu Sınav</th><th>Son Giriş Tarihi</th><th>İşlem</th></tr>`;
+    
     teachers.forEach(t => {
       const qCount = quizzes ? quizzes.filter(q => q.teacher_name === t.name).length : 0;
-      let loginDateStr = 'Hiç girmedi'; if(t.last_login) { const d = new Date(t.last_login); loginDateStr = d.toLocaleDateString('tr-TR') + ' - ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}); }
-      html += `<tr><td><strong>${t.name}</strong></td><td><span style="background:#e0e7ff; color:var(--primary); padding:6px 14px; border-radius:20px; font-weight:800;">${qCount}</span></td><td style="color:var(--ink3);">${loginDateStr}</td></tr>`;
-    }); html += `</table></div></div>`; tb.innerHTML = html;
-  } catch(e) { tb.innerHTML=`Hata`; }
+      let loginDateStr = 'Hiç girmedi'; 
+      if(t.last_login) { const d = new Date(t.last_login); loginDateStr = d.toLocaleDateString('tr-TR') + ' - ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}); }
+      
+      let roleBadge = t.is_admin ? `<span style="background:#fee2e2; color:#b91c1c; padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:bold;">Yönetici</span>` : `<span style="background:#e0e7ff; color:var(--primary); padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:bold;">Öğretmen</span>`;
+      let delBtn = t.name === currentTeacher.name ? `<span style="color:var(--ink3); font-size:0.85rem; font-weight:bold;">(Sen)</span>` : `<button class="btn btn-danger btn-sm" onclick="deleteTeacher('${t.id}')">Sil</button>`;
+
+      html += `<tr><td><strong>${t.name}</strong></td><td>${roleBadge}</td><td><span style="background:#f1f5f9; color:var(--ink); padding:4px 10px; border-radius:12px; font-weight:bold;">${qCount}</span></td><td style="color:var(--ink3); font-size:0.9rem;">${loginDateStr}</td><td>${delBtn}</td></tr>`;
+    }); 
+    html += `</table></div></div>`; 
+    tb.innerHTML = html;
+  } catch(e) { tb.innerHTML=`<div class="card" style="color:red; text-align:center;">Bağlantı Hatası Oluştu.</div>`; }
 }
 
+async function addTeacher() {
+    const name = document.getElementById('new-t-name').value.trim();
+    const pw = document.getElementById('new-t-pw').value.trim();
+    const isAdmin = document.getElementById('new-t-admin').checked;
+
+    if(!name || !pw) return showToast('⚠️ İsim ve şifre boş olamaz.');
+    showLoader('Ekleniyor...');
+    try {
+        const check = await sbFetch(`teachers?name=eq.${name}&institution_id=eq.${currentInstitution.id}`);
+        if(check && check.length > 0) { hideLoader(); return showToast('⚠️ Bu isimde personel zaten var.'); }
+
+        await sbFetch('teachers', { method: 'POST', body: JSON.stringify({ name, password: pw, is_admin: isAdmin, institution_id: currentInstitution.id }) });
+        showToast('✅ Personel başarıyla eklendi!');
+        renderStatsTab();
+    } catch(e) { showToast('❌ Kayıt hatası.'); } finally { hideLoader(); }
+}
+
+async function deleteTeacher(id) {
+    if(!confirm('Bu personeli silmek istediğinize emin misiniz?')) return;
+    showLoader('Siliniyor...');
+    try {
+        await sbFetch(`teachers?id=eq.${id}`, { method: 'DELETE' });
+        showToast('🗑️ Personel silindi.');
+        renderStatsTab();
+    } catch(e) { showToast('❌ Hata oluştu.'); } finally { hideLoader(); }
+}
 // --- SINAV LİSTESİ ---
 async function renderQuizListTab(){
   const tb=document.getElementById('tab-body'); tb.innerHTML='<div class="spin" style="margin:40px auto"></div>';
