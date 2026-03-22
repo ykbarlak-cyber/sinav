@@ -471,7 +471,7 @@ async function renderQuizListTab(){
   } catch(e){ tb.innerHTML=`Hata`; }
 }
 
-// --- YENİ V9.1 WHATSAPP DESTEKLİ SONUÇ EKRANI ---
+// --- YENİ V9.2 WHATSAPP DESTEKLİ SONUÇ EKRANI (DİNAMİK ÖĞRETMEN İSMİ) ---
 async function viewQuizResults(quizId, quizName) {
   showLoader('Sonuçlar getiriliyor...');
   try {
@@ -481,22 +481,30 @@ async function viewQuizResults(quizId, quizName) {
         return showToast("⚠️ Henüz bu sınava katılan öğrenci yok.");
     }
 
-    // Netlere göre büyükten küçüğe sırala
     results.sort((a,b) => b.net - a.net);
+
+    // TOPLU MESAJ METNİNİ HAZIRLA (İSİM DİNAMİK OLDU)
+    let bulkText = `🏆 *${quizName} Sınav Sonuçları* 🏆\n\n`;
+    results.forEach((r, i) => { bulkText += `${i + 1}. ${r.student_name} - ${parseFloat(r.net).toFixed(2)} Net\n`; });
+    bulkText += `\nDetaylı analiz için platformumuzu ziyaret edebilirsiniz. İyi çalışmalar dilerim. - ${currentTeacher.name}`;
+    
+    window._currentBulkText = bulkText;
 
     let html = `
     <div class="card" style="border-top: 4px solid var(--primary);">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0; color:var(--primary);">📊 Analiz: ${quizName}</h2>
-        <button class="btn btn-ghost" onclick="switchTab('quizzes')">← Sınavlara Dön</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-sm" style="background:#25D366; color:white; font-size:0.95rem; padding:8px 16px;" onclick="navigator.clipboard.writeText(window._currentBulkText).then(()=>showToast('✅ Tüm sınıfın sonuçları kopyalandı! WhatsApp Grubuna yapıştırabilirsiniz.'));">📋 Sınıf Grubuna Atmak İçin Kopyala</button>
+            <button class="btn btn-ghost" onclick="switchTab('quizzes')">← Sınavlara Dön</button>
+        </div>
       </div>
       <div style="overflow-x:auto;">
         <table>
-          <tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Veli Bilgilendirme</th></tr>
+          <tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Özel Veli Mesajı</th></tr>
           ${results.map((r, i) => {
-            // WHATSAPP İÇİN OTOMATİK MESAJ METNİ OLUŞTURUYORUZ
-            const msg = `Sayın Velimiz, öğrenciniz ${r.student_name} bugünkü "${quizName}" sınavında ${r.correct} Doğru, ${r.wrong} Yanlış, ${r.blank} Boş ile ${parseFloat(r.net).toFixed(2)} Net yapmıştır. Gelişimini platformumuzdan takip edebilirsiniz. İyi günler dilerim.`;
-            // Metni URL formatına çeviriyoruz ki WhatsApp anlayabilsin
+            // TEKLİ MESAJ METNİ (İSİM DİNAMİK OLDU)
+            const msg = `Sayın Velimiz, öğrenciniz ${r.student_name} bugünkü "${quizName}" sınavında ${r.correct} Doğru, ${r.wrong} Yanlış, ${r.blank} Boş ile ${parseFloat(r.net).toFixed(2)} Net yapmıştır. Gelişimini platformumuzdan takip edebilirsiniz. İyi günler dilerim. - ${currentTeacher.name}`;
             const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`;
             
             return `
@@ -508,7 +516,7 @@ async function viewQuizResults(quizId, quizName) {
               <td style="color:var(--wrong); font-weight:bold;">${r.wrong}</td>
               <td style="color:var(--ink3);">${r.blank}</td>
               <td><span style="background:#e0e7ff; color:var(--primary); padding:6px 12px; border-radius:12px; font-weight:bold;">${parseFloat(r.net).toFixed(2)}</span></td>
-              <td><a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25D366; color:white; text-decoration:none; display:inline-block; padding:8px 12px; font-weight:bold;">💬 WhatsApp'a Gönder</a></td>
+              <td><a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25D366; color:white; text-decoration:none; display:inline-block; padding:8px 12px; font-weight:bold;">💬 Tekli Gönder</a></td>
             </tr>
             `;
           }).join('')}
@@ -517,8 +525,26 @@ async function viewQuizResults(quizId, quizName) {
     </div>`;
 
     document.getElementById('tab-body').innerHTML = html;
-
   } catch (error) { showToast("❌ Sonuçlar alınırken hata oluştu."); } finally { hideLoader(); }
+}
+
+// --- YAPAY ZEKA SINIF RAPORU SİSTEMİ (DİNAMİK ÖĞRETMEN İSMİ) ---
+async function getAIClassReport(quizId, quizName) {
+  showLoader('Yapay Zeka Sınıf Sonuçlarını Analiz Ediyor (10-15 saniye sürebilir)...');
+  try {
+    const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`);
+    if(!results || results.length === 0) { hideLoader(); return showToast('⚠️ Bu sınava henüz öğrenci girmemiş.'); }
+
+    let statsText = results.map(r => `${r.student_name}: ${r.correct} Doğru, ${r.wrong} Yanlış, Net: ${parseFloat(r.net).toFixed(2)}`).join('\n');
+
+    // YAPAY ZEKA PROMPTU (İSİM DİNAMİK OLDU)
+    const prompt = `Sen uzman bir Eğitim Danışmanı ve Veri Analistisin. Sınav: "${quizName}". Sonuçlar:\n\n${statsText}\n\nLütfen "Değerli ${currentTeacher.name} Hocam" diyerek başla. Öğrenci başarılarını, eksiklerini ve sınıf genelini profesyonelce analiz et. Raporun EN ALTINA imza olarak tam olarak şunu yaz: "Saygılarımla, ${currentTeacher.name} Yapay Zeka Eğitim Asistanı"`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "text/plain" } }) });
+    const data = await res.json(); const aiText = data.candidates[0].content.parts[0].text;
+
+    document.getElementById('tab-body').innerHTML = `<div class="card" style="border: 2px solid #8b5cf6;"><div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px;"><h2 style="color:#6d28d9; margin:0;"><span class="emoji" style="display:inline; font-size:1.5rem; margin-right:8px;">✨</span> Yapay Zeka Sınıf Raporu: ${quizName}</h2><button class="btn btn-ghost" onclick="switchTab('quizzes')">← Sınavlara Dön</button></div><div style="background:#faf5ff; padding:24px; border-radius:10px; line-height:1.7; font-size:1.1rem; color:#4c1d95; margin-top:20px;">${aiText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div></div>`;
+  } catch(e) { showToast('❌ Yapay zeka ile bağlantı kurulamadı.'); } finally { hideLoader(); }
 }
 async function downloadExcel(quizId, quizName) {
   showLoader('Excel hazırlanıyor...');
