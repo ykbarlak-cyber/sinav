@@ -245,18 +245,30 @@ function changeInstitution() { currentInstitution = null; showScreen('s-institut
 // ÖĞRENCİ GİRİŞİ VE PANELİ
 // ═══════════════════════════════════════════════
 async function loginStudent(){
-  const no = document.getElementById('stu-no').value.trim(); const pw = document.getElementById('stu-pw').value.trim();
-  if(!no || !pw) { showToast('⚠️ Numara ve şifre girin.'); return; } showLoader('Giriş yapılıyor...');
+  const no = document.getElementById('stu-no').value.trim(); 
+  const pw = document.getElementById('stu-pw').value.trim();
+  if(!no || !pw) { showToast('⚠️ Numara ve şifre girin.'); return; } 
+  showLoader('Giriş yapılıyor...');
   try {
-    // V10.0 GÜNCELLEMESİ: Sadece bu kurumdaki öğrencileri ara
-   const res = await sbFetch(`students?student_number=eq.${no}&password=eq.${pw}&institution_id=eq.${currentInstitution.id}`);
+    const url = `students?student_number=eq.${no}&password=eq.${pw}&institution_id=eq.${currentInstitution.id}`;
+    console.log('Sorgu:', url);
+    console.log('Kurum:', currentInstitution);
+    const res = await sbFetch(url);
+    console.log('Sonuç:', res);
     if(res && res.length > 0) {
-      currentStudent = res[0]; document.getElementById('stu-no').value = ''; document.getElementById('stu-pw').value = '';
+      currentStudent = res[0]; 
+      document.getElementById('stu-no').value = ''; 
+      document.getElementById('stu-pw').value = '';
       renderStudentDashboard();
-    } else { showToast('❌ Hatalı numara veya şifre!'); }
-  } catch(e) { showToast('Bağlantı hatası.'); } hideLoader();
+    } else { 
+      showToast('❌ Hatalı numara veya şifre!'); 
+    }
+  } catch(e) { 
+    console.error('HATA:', e);
+    showToast('Bağlantı hatası.'); 
+  } 
+  hideLoader();
 }
-
 function logoutStudent() { currentStudent = null; showScreen('s-landing'); }
 
 async function renderStudentDashboard() {
