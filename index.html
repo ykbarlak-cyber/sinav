@@ -272,6 +272,7 @@ async function loginStudent(){
 function logoutStudent() { currentStudent = null; showScreen('s-landing'); }
 
 async function renderStudentDashboard() {
+  showScreen('s-student-dashboard');
   const dashContainer = document.getElementById('s-student-dashboard');
   if (!dashContainer) return;
 
