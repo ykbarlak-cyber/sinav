@@ -471,14 +471,55 @@ async function renderQuizListTab(){
   } catch(e){ tb.innerHTML=`Hata`; }
 }
 
+// --- YENİ V9.1 WHATSAPP DESTEKLİ SONUÇ EKRANI ---
 async function viewQuizResults(quizId, quizName) {
   showLoader('Sonuçlar getiriliyor...');
   try {
-    const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`); if(!results || results.length === 0) { alert("Henüz katılımcı yok."); return; }
-    let resTxt = `SINAV: ${quizName}\n\n`; results.sort((a,b) => b.net - a.net).forEach((r, i) => { resTxt += `${i + 1}. ${r.student_name} (${r.student_number}) | ${parseFloat(r.net).toFixed(2)} Net\n`; }); alert(resTxt); 
-  } catch (error) { alert("Hata"); } finally { hideLoader(); }
-}
+    const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`);
+    if(!results || results.length === 0) {
+        hideLoader();
+        return showToast("⚠️ Henüz bu sınava katılan öğrenci yok.");
+    }
 
+    // Netlere göre büyükten küçüğe sırala
+    results.sort((a,b) => b.net - a.net);
+
+    let html = `
+    <div class="card" style="border-top: 4px solid var(--primary);">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px;">
+        <h2 style="margin:0; color:var(--primary);">📊 Analiz: ${quizName}</h2>
+        <button class="btn btn-ghost" onclick="switchTab('quizzes')">← Sınavlara Dön</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Veli Bilgilendirme</th></tr>
+          ${results.map((r, i) => {
+            // WHATSAPP İÇİN OTOMATİK MESAJ METNİ OLUŞTURUYORUZ
+            const msg = `Sayın Velimiz, öğrenciniz ${r.student_name} bugünkü "${quizName}" sınavında ${r.correct} Doğru, ${r.wrong} Yanlış, ${r.blank} Boş ile ${parseFloat(r.net).toFixed(2)} Net yapmıştır. Gelişimini platformumuzdan takip edebilirsiniz. İyi günler dilerim.`;
+            // Metni URL formatına çeviriyoruz ki WhatsApp anlayabilsin
+            const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+            
+            return `
+            <tr>
+              <td><strong style="color:var(--ink3);">${i + 1}</strong></td>
+              <td><strong>${r.student_name}</strong></td>
+              <td>${r.student_number}</td>
+              <td style="color:var(--correct); font-weight:bold;">${r.correct}</td>
+              <td style="color:var(--wrong); font-weight:bold;">${r.wrong}</td>
+              <td style="color:var(--ink3);">${r.blank}</td>
+              <td><span style="background:#e0e7ff; color:var(--primary); padding:6px 12px; border-radius:12px; font-weight:bold;">${parseFloat(r.net).toFixed(2)}</span></td>
+              <td><a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25D366; color:white; text-decoration:none; display:inline-block; padding:8px 12px; font-weight:bold;">💬 WhatsApp'a Gönder</a></td>
+            </tr>
+            `;
+          }).join('')}
+        </table>
+      </div>
+    </div>`;
+
+    document.getElementById('tab-body').innerHTML = html;
+
+  } catch (error) { showToast("❌ Sonuçlar alınırken hata oluştu."); } finally { hideLoader(); }
+}
 async function downloadExcel(quizId, quizName) {
   showLoader('Excel hazırlanıyor...');
   try {
