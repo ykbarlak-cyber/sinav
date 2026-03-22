@@ -249,7 +249,7 @@ async function loginStudent(){
   if(!no || !pw) { showToast('⚠️ Numara ve şifre girin.'); return; } showLoader('Giriş yapılıyor...');
   try {
     // V10.0 GÜNCELLEMESİ: Sadece bu kurumdaki öğrencileri ara
-    const res = await sbFetch(`students?student_number=eq.${no}&password=eq.${pw}&institution_id=eq.${currentInstitution.id}`);
+   const res = await sbFetch(`students?student_number=eq.${no}&password=eq.${pw}&institution_id=eq.${currentInstitution.id}`);
     if(res && res.length > 0) {
       currentStudent = res[0]; document.getElementById('stu-no').value = ''; document.getElementById('stu-pw').value = '';
       renderStudentDashboard();
