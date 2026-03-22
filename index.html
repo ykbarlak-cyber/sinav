@@ -133,26 +133,39 @@
 </div>
 
 <div class="screen" id="s-teacher">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-    <div style="font-weight:800; font-size:1.2rem; color:var(--ink);" id="t-inst-header">Sınav Merkezi <span style="color:var(--primary)">V10.0</span></div>
-    <div style="display:flex; align-items:center; gap:16px;">
-      <div style="display:flex; align-items:center; gap:16px;">
-      <div style="font-weight:600; color:var(--ink3);" id="teacher-welcome"></div>
-      <button class="btn btn-secondary btn-sm" onclick="changeMyPassword()">🔑 Şifre Değiştir</button>
-      <button class="btn btn-danger btn-sm" onclick="logoutTeacher()">Çıkış Yap</button>
+  <div style="background:white; padding:16px 24px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+    <div style="font-weight:800; font-size:1.2rem;" id="t-inst-header">Sınav Merkezi</div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="font-weight:600; color:#64748b;" id="teacher-welcome"></span>
+      <button class="btn btn-secondary btn-sm" onclick="changeMyPassword()">🔑 Şifre</button>
+      <button class="btn btn-danger btn-sm" onclick="logoutTeacher()">Çıkış</button>
     </div>
   </div>
-  <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
-    <div style="flex:1; min-width:260px;" id="teacher-sidebar" class="sidebar-dark"></div>
-    <div style="flex:3; min-width:400px;" id="teacher-main">
-      <div class="card" style="text-align:center; padding:60px;"><p style="font-size:1.1rem; color:var(--ink3);">👈 Sol menüden işlem yapmak istediğiniz sınıfı seçin.</p></div>
+  <div style="background:white; padding:24px; border-radius:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom:20px;">
+    <h3 style="margin:0 0 16px 0; color:#1e293b;">📚 Sınıf & Şube Seç</h3>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+      <div style="flex:1; min-width:150px;">
+        <label style="font-size:0.85rem; font-weight:600; color:#64748b; display:block; margin-bottom:6px;">SINIF</label>
+        <select id="class-select" onchange="updateBranchSelect()" style="width:100%; padding:12px; border-radius:10px; border:1px solid #e2e8f0; font-size:1rem; background:#f8fafc;">
+          <option value="">-- Sınıf Seçin --</option>
+        </select>
+      </div>
+      <div style="flex:1; min-width:150px;">
+        <label style="font-size:0.85rem; font-weight:600; color:#64748b; display:block; margin-bottom:6px;">ŞUBE</label>
+        <select id="branch-select" style="width:100%; padding:12px; border-radius:10px; border:1px solid #e2e8f0; font-size:1rem; background:#f8fafc;">
+          <option value="">-- Önce Sınıf --</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="padding:12px 24px; font-size:1rem;" onclick="goToClass()">➜ Git</button>
     </div>
   </div>
-</div>
-</div>
+  <div id="teacher-sidebar" style="display:none;"></div>
+  <div id="teacher-main">
+    <div class="card" style="text-align:center; padding:60px;">
+      <p style="font-size:1.1rem; color:#64748b;">👆 Yukarıdan sınıf ve şube seçin.</p>
     </div>
   </div>
-</div>   
+</div> 
 <div class="screen" id="s-student-dashboard"></div>
 
 <div class="screen" id="s-quiz" style="max-width:800px;">
