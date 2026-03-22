@@ -262,8 +262,12 @@ async function renderStudentDashboard() {
   const dashContainer = document.getElementById('s-student-dashboard');
   dashContainer.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
       <div style="font-weight:800; font-size:1.2rem;">🎓 Hoş geldin, <span style="color:var(--primary)">${currentStudent.name}</span> (${currentStudent.class_id}-${currentStudent.branch})</div>
-      <button class="btn btn-danger btn-sm" onclick="logoutStudent()">Çıkış Yap</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-secondary btn-sm" onclick="changeStudentPassword()">🔑 Şifre Değiştir</button>
+        <button class="btn btn-danger btn-sm" onclick="logoutStudent()">Çıkış Yap</button>
+      </div>
     </div>
     <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
         <div class="card" style="flex:2; border-top: 4px solid var(--primary); min-width:300px;"><h3 style="margin-top:0"><span class="emoji" style="font-size:1.5rem;display:inline;">📝</span> Girmem Gereken Sınavlar</h3><div id="student-active-quizzes"><div class="spin" style="margin:20px auto"></div></div></div>
@@ -549,6 +553,24 @@ async function registerTeacher() {
     document.getElementById('reg-t-pw').value = '';
     showScreen('s-teacher-pw');
   } catch(e) { showToast('❌ Kayıt sırasında hata oluştu.'); } finally { hideLoader(); }
+}
+  // --- 🎒 ÖĞRENCİ ŞİFRE DEĞİŞTİRME SİSTEMİ ---
+async function changeStudentPassword() {
+  const oldPw = prompt('Güvenlik için lütfen MEVCUT şifrenizi giriniz:');
+  if (!oldPw) return;
+  if (oldPw !== currentStudent.password) return showToast('❌ Eski şifre hatalı!');
+  
+  const newPw = prompt('Lütfen YENİ şifrenizi giriniz:');
+  if (!newPw || newPw.trim() === '') return showToast('⚠️ Yeni şifre boş olamaz!');
+  
+  showLoader('Şifreniz güncelleniyor...');
+  try {
+    await sbFetch(`students?id=eq.${currentStudent.id}`, { method: 'PATCH', body: JSON.stringify({ password: newPw }) });
+    currentStudent.password = newPw; // Sistemin hafızasında da anında güncelleyelim
+    showToast('✅ Şifreniz başarıyla değiştirildi!');
+  } catch (e) {
+    showToast('❌ Güncelleme sırasında hata oluştu.');
+  } finally { hideLoader(); }
 }
 </script>
 </body>
