@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Online Sınav Platformu V7.0 - Öğrenci Portalı</title>
+<title>Online Sınav Platformu V7.1 - Kurumsal</title>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
   :root { --primary: #4f46e5; --primary-hover: #4338ca; --bg: #f4f7f6; --ink: #1e293b; --ink3: #64748b; --border: #e2e8f0; --correct: #10b981; --wrong: #ef4444; --sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); }
@@ -105,7 +105,7 @@
 
 <div class="screen" id="s-teacher">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:white; padding:16px 24px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-    <div style="font-weight:800; font-size:1.2rem; color:var(--ink);">Sınav Merkezi <span style="color:var(--primary)">V7</span></div>
+    <div style="font-weight:800; font-size:1.2rem; color:var(--ink);">Sınav Merkezi <span style="color:var(--primary)">V7.1</span></div>
     <div style="display:flex; align-items:center; gap:16px;">
       <div style="font-weight:600; color:var(--ink3);" id="teacher-welcome"></div>
       <button class="btn btn-danger btn-sm" onclick="logoutTeacher()">Çıkış Yap</button>
@@ -177,8 +177,8 @@
 // AYARLAR (ŞİFRELERİNİ BURAYA YAPIŞTIR)
 // ═══════════════════════════════════════════════
 const SUPABASE_URL = "https://uwjanizsyhihlenywqbo.supabase.co"; 
-const SUPABASE_KEY = "sb_publishable_1X-nEOI-GBvyisJMbrmHpw_ANXxGafx"; 
-const GEMINI_API_KEY = "AIzaSyBOvmLNACzw" + "U4xRrJbNnNdyhagNpCcTcB4"; 
+const SUPABASE_KEY = "BURAYA_UZUN_SUPABASE_SIFRESI_GELECEK"; 
+const GEMINI_API_KEY = "BURAYA_ILK_YARI" + "BURAYA_IKINCI_YARI"; 
 
 const CLASS_DEFS = [ {id:'6', label:'6. Sınıf', icon:'📗'}, {id:'7', label:'7. Sınıf', icon:'📘'}, {id:'8', label:'8. Sınıf', icon:'📙'}, {id:'9', label:'9. Sınıf', icon:'📕'}, {id:'10', label:'10. Sınıf', icon:'📓'}, {id:'11', label:'11. Sınıf', icon:'📒'}, {id:'12', label:'12. Sınıf', icon:'📔'}, {id:'mezEA', label:'Mezun — EA', icon:'🎓'}, {id:'mezSAY', label:'Mezun — SAY', icon:'🎓'}, {id:'kpss', label:'KPSS', icon:'🏛'} ];
 const BRANCHES = ['A','B','C']; const LETTERS  = ['A','B','C','D','E'];
@@ -198,7 +198,7 @@ async function sbFetch(path, opts={}){
 }
 
 // ═══════════════════════════════════════════════
-// ÖĞRENCİ GİRİŞİ VE PANELİ (YENİ)
+// ÖĞRENCİ GİRİŞİ VE PANELİ
 // ═══════════════════════════════════════════════
 async function loginStudent(){
   const no = document.getElementById('stu-no').value.trim(); const pw = document.getElementById('stu-pw').value.trim();
@@ -221,14 +221,10 @@ async function renderStudentDashboard() {
   actDiv.innerHTML = '<div class="spin" style="margin:20px auto"></div>'; pastDiv.innerHTML = '<div class="spin" style="margin:20px auto"></div>';
   
   try {
-    // Sınıfına ait tüm sınavları çek
     const quizzes = await sbFetch(`quizzes?class_id=eq.${currentStudent.class_id}&branch=eq.${currentStudent.branch}&order=created_at.desc`);
-    // Çözdüğü sınavları çek
     const results = await sbFetch(`quiz_results?student_number=eq.${currentStudent.student_number}&order=created_at.desc`);
-    
     let solvedQuizIds = results ? results.map(r => r.quiz_id) : [];
     
-    // Aktif Sınavlar (Henüz Çözmedikleri)
     const activeQ = quizzes ? quizzes.filter(q => !solvedQuizIds.includes(q.id)) : [];
     if(activeQ.length === 0) { actDiv.innerHTML = '<p style="color:var(--ink3)">Şu an girmen gereken yeni bir sınav yok. 🎉</p>'; } 
     else {
@@ -238,7 +234,6 @@ async function renderStudentDashboard() {
         <button class="btn btn-primary btn-sm">Sınava Gir</button></div>`).join('');
     }
 
-    // Geçmiş Sınavlar (Çözdükleri)
     if(!results || results.length === 0) { pastDiv.innerHTML = '<p style="color:var(--ink3)">Henüz çözdüğün bir sınav yok.</p>'; }
     else {
       pastDiv.innerHTML = results.map(r => `<div class="available-quiz" style="cursor:default;">
@@ -302,8 +297,7 @@ function renderTeacherPanel(){
 
 function switchTab(t){ teacherTab=t; renderTeacherPanel(); }
 
-// --- YENİ EKLENEN ÖĞRENCİ YÖNETİMİ SEKMESİ ---
-// --- YENİ EKLENEN ÖĞRENCİ YÖNETİMİ SEKMESİ (TOPLU EKLEME GÜNCELLEMESİ) ---
+// --- YENİ EKLENEN ÖĞRENCİ YÖNETİMİ SEKMESİ (TOPLU EKLEME KURŞUNGEÇİRMEZ V7.1) ---
 async function renderStudentsTab(){
   const tb = document.getElementById('tab-body');
   tb.innerHTML = `
@@ -325,7 +319,7 @@ async function renderStudentsTab(){
     </div>
 
     <div class="card">
-      <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">📋 ${activeClassId}-${activeBranch} Sınıf Listesi</h3>
+      <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">📋 Sınıf Listesi</h3>
       <div id="student-list-area"><div class="spin" style="margin:20px auto"></div></div>
     </div>`;
   loadStudentList();
@@ -359,30 +353,22 @@ async function bulkAddStudents() {
   const newStudents = [];
   
   for(let line of lines) {
-    if(!line.trim()) continue; // Boş satırları görmezden gel
+    if(!line.trim()) continue; 
     
-    // Satırı İSTİSNASIZ bütün boşluklardan (Tab, normal boşluk vs.) parçala
+    // Satırı İSTİSNASIZ bütün boşluklardan parçala
     const tokens = line.trim().split(/\s+/);
     
     // En az 3 parça (Ad, No, Şifre) varsa işleme al
     if(tokens.length >= 3) {
-      const password = tokens.pop(); // En sondaki kelimeyi Şifre al
-      const student_number = tokens.pop(); // Sondan bir öncekini Numara al
-      const name = tokens.join(' '); // Geriye kalan her şeyi İsim olarak birleştir
+      const password = tokens.pop(); 
+      const student_number = tokens.pop(); 
+      const name = tokens.join(' '); 
       
-      newStudents.push({
-        name: name,
-        student_number: student_number,
-        password: password,
-        class_id: activeClassId,
-        branch: activeBranch
-      });
+      newStudents.push({ name: name, student_number: student_number, password: password, class_id: activeClassId, branch: activeBranch });
     }
   }
   
-  if(newStudents.length === 0) {
-    return showToast('❌ Hata: İsim, Numara ve Şifre arasında en az birer boşluk olmalı.');
-  }
+  if(newStudents.length === 0) { return showToast('❌ Hata: İsim, Numara ve Şifre arasında boşluk olmalı.'); }
   
   showLoader(newStudents.length + ' Öğrenci Sisteme Yükleniyor...');
   try {
@@ -390,27 +376,7 @@ async function bulkAddStudents() {
     showToast('🎉 ' + newStudents.length + ' Öğrenci Başarıyla Eklendi!');
     document.getElementById('bulk-students-data').value = '';
     loadStudentList();
-  } catch(e) {
-    showToast('❌ Kayıt hatası! Listede daha önce kaydedilmiş bir numara olabilir.');
-  } finally { 
-    hideLoader(); 
-  }
-}
-  
-  if(newStudents.length === 0) return showToast('❌ Geçerli veri bulunamadı. Excelde Ad, No, Şifre yan yana olmalıdır.');
-  
-  showLoader(newStudents.length + ' Öğrenci Sisteme Yükleniyor...');
-  try {
-    // Supabase tek seferde toplu liste kaydetmeye izin verir!
-    await sbFetch('students', { method: 'POST', body: JSON.stringify(newStudents) });
-    showToast('🎉 ' + newStudents.length + ' Öğrenci Başarıyla Eklendi!');
-    document.getElementById('bulk-students-data').value = '';
-    loadStudentList();
-  } catch(e) {
-    showToast('❌ Kayıt hatası! Listede daha önceden kayıtlı bir numara olabilir.');
-  } finally {
-    hideLoader();
-  }
+  } catch(e) { showToast('❌ Kayıt hatası! Listede kayıtlı numara olabilir.'); } finally { hideLoader(); }
 }
 
 async function deleteStudent(id) {
@@ -418,6 +384,19 @@ async function deleteStudent(id) {
   try { await sbFetch(`students?id=eq.${id}`, { method: 'DELETE' }); loadStudentList(); showToast('Silindi.'); } catch(e) { showToast('Hata'); } finally { hideLoader(); }
 }
 // ----------------------------------------------
+
+async function renderStatsTab(){
+  const tb = document.getElementById('tab-body'); tb.innerHTML = '<div class="spin" style="margin:40px auto"></div>';
+  try {
+    const teachers = await sbFetch('teachers?order=last_login.desc.nullslast'); const quizzes = await sbFetch('quizzes?select=id,teacher_name');
+    let html = `<div class="card"><h3>📊 Personel Aktiviteleri</h3><div style="overflow-x:auto;"><table><tr><th>Öğretmen Adı</th><th>Oluşturduğu Sınav</th><th>Son Giriş Tarihi</th></tr>`;
+    teachers.forEach(t => {
+      const qCount = quizzes ? quizzes.filter(q => q.teacher_name === t.name).length : 0;
+      let loginDateStr = 'Sisteme hiç girmedi'; if(t.last_login) { const d = new Date(t.last_login); loginDateStr = d.toLocaleDateString('tr-TR') + ' - ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}); }
+      html += `<tr><td><strong>${t.name}</strong></td><td><span style="background:#e0e7ff; color:var(--primary); padding:6px 14px; border-radius:20px; font-weight:800;">${qCount}</span></td><td style="color:var(--ink3);">${loginDateStr}</td></tr>`;
+    }); html += `</table></div></div>`; tb.innerHTML = html;
+  } catch(e) { tb.innerHTML=`<div class="card"><p>Hata</p></div>`; }
+}
 
 async function renderQuizListTab(){
   const tb=document.getElementById('tab-body'); tb.innerHTML='<div class="spin" style="margin:40px auto"></div>';
