@@ -444,16 +444,74 @@ async function deleteQuizById(id){ if(!confirm('Silinsin mi?')) return; showLoad
 function renderNewQuizTab(){
   const tb=document.getElementById('tab-body'); const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
   tb.innerHTML= `<div class="card" style="display:flex; gap:16px; align-items:flex-end;">
-      <div class="field" style="flex:2"><label>Sınavın Adı</label><input type="text" id="new-quiz-name" placeholder="Örn: 1. Dönem Denemesi" /></div>
-      <div class="field" style="flex:1"><label>Süre (Dakika)</label><input type="number" id="new-quiz-time" placeholder="0 = Süresiz" value="0" /></div>
+      <div class="field" style="flex:2"><label style="font-weight:bold;">Sınavın Adı</label><input type="text" id="new-quiz-name" placeholder="Örn: 1. Dönem Denemesi" /></div>
+      <div class="field" style="flex:1"><label style="font-weight:bold;">Süre (Dakika)</label><input type="number" id="new-quiz-time" placeholder="0 = Süresiz" value="0" /></div>
     </div>
-    <div class="card"><h3 style="margin-top:0; color:var(--primary);">🤖 Yapay Zeka ile Soru Üret (${optCount} Şıklı)</h3>
-      <input type="file" id="file-inp" accept=".pdf,.txt" onchange="handleFile(this)" style="margin-bottom:16px; width:100%; padding:10px; border:1px dashed var(--primary); border-radius:10px;" />
-      <button class="btn btn-primary" style="width:100%;" onclick="extractFromFile()">✨ Soruları Otomatik Çıkar</button>
+    
+    <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
+      <div class="card" style="flex:1; margin-bottom:0; min-width:250px; border-top:3px solid var(--primary);">
+        <h3 style="margin-top:0; color:var(--primary);">🤖 Yapay Zeka ile Üret</h3>
+        <p style="color:var(--ink3); font-size:0.85rem;">PDF veya metinden otomatik soru ve şık çıkarır.</p>
+        <input type="file" id="file-inp" accept=".pdf,.txt" onchange="handleFile(this)" style="margin-bottom:10px; width:100%; padding:8px; border:1px dashed var(--primary); border-radius:8px;" />
+        <button class="btn btn-primary" style="width:100%;" onclick="extractFromFile()">✨ Otomatik Çıkar</button>
+      </div>
+
+      <div class="card" style="flex:1; margin-bottom:0; min-width:250px; border-top:3px solid #f59e0b; display:flex; flex-direction:column; justify-content:space-between;">
+        <h3 style="margin-top:0; color:#d97706;">🖼️ Toplu Ekran Görüntüsü</h3>
+        <p style="color:var(--ink3); font-size:0.85rem;">Testin 30 sorusunu (fotoğrafını) aynı anda seçin, sistem 30 soruluk taslağı otomatik dizsin!</p>
+        <label class="btn" style="width:100%; padding:10px; text-align:center; cursor:pointer; background:#f59e0b; color:white; border-radius:10px; font-weight:bold;">
+          📁 Resimleri Seç ve Toplu Yükle
+          <input type="file" style="display:none;" accept="image/*" multiple onchange="bulkUploadImages(this)">
+        </label>
+      </div>
+
+      <div class="card" style="flex:1; margin-bottom:0; min-width:250px; border-top:3px solid var(--correct); display:flex; flex-direction:column; justify-content:space-between;">
+        <h3 style="margin-top:0; color:var(--correct);">✍️ Tekli Boş Soru</h3>
+        <p style="color:var(--ink3); font-size:0.85rem;">Sadece metinle veya tek bir resimle sıfırdan soru yazmak için.</p>
+        <button class="btn btn-excel" style="width:100%; padding:10px;" onclick="addManualDraftQ()">➕ Boş Soru Ekle</button>
+      </div>
     </div>
-    <div class="card"><h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">📋 Sınav Önizlemesi</h3><div id="draft-q-list"></div></div>
-    <button class="btn btn-excel" style="width:100%; font-size:1.2rem; padding:16px; margin-bottom:40px;" onclick="saveQuiz()">💾 Kaydet</button>`;
+
+    <div class="card"><h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:12px;">📋 Sınav Önizlemesi (Düzenlenebilir)</h3><div id="draft-q-list"></div></div>
+    <button class="btn btn-primary" style="width:100%; font-size:1.2rem; padding:16px; margin-bottom:40px; background:#1e293b;" onclick="saveQuiz()">💾 Sınavı Kaydet ve Yayınla</button>`;
   renderDraftQ();
+}
+
+function addManualDraftQ() {
+  const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
+  draftQuestions.push({ text: "", options: Array(optCount).fill(""), correct: 0, image: null });
+  renderDraftQ();
+}
+
+// YENİ: TOPLU RESİM YÜKLEME FONKSİYONU
+async function bulkUploadImages(input) {
+  const files = input.files;
+  if (!files || files.length === 0) return;
+  const optCount = isMiddleSchool(activeClassId) ? 4 : 5;
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    showLoader(`Toplu Yükleme: ${i+1} / ${files.length} resim buluta işleniyor...`);
+    const ext = file.name.split('.').pop(); const fileName = Date.now() + '_' + Math.random().toString(36).substr(2,5) + '.' + ext;
+    
+    try {
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/quiz-images/${fileName}`, {
+        method: 'POST', headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY, 'Content-Type': file.type }, body: file
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/quiz-images/${fileName}`;
+      
+      // Resim başarıyla yüklendiğinde listeye anında yeni bir soru bloğu ekle
+      draftQuestions.push({
+        text: "Yukarıdaki görsele göre doğru seçeneği işaretleyiniz.", // Varsayılan metin
+        options: Array(optCount).fill(""), // Şıklar boş (Sadece A,B,C harfleri görünecek)
+        correct: 0, // Varsayılan cevap A
+        image: imageUrl
+      });
+    } catch(e) { alert(`Hata (${file.name}): ` + e.message); }
+  }
+  
+  hideLoader(); input.value = ''; showToast(`✅ ${files.length} adet resim başarıyla sınav taslağına eklendi!`); renderDraftQ();
 }
 
 function handleFile(input){
@@ -468,7 +526,7 @@ async function extractFromFile(){
     const optCount = isMiddleSchool(activeClassId) ? 4 : 5; const exampleOpts = optCount === 4 ? '"A Şıkkı","B Şıkkı","C Şıkkı","D Şıkkı"' : '"A Şıkkı","B Şıkkı","C Şıkkı","D Şıkkı","E Şıkkı"';
     const parts = []; if(pdfB64) parts.push({ inlineData: { mimeType: "application/pdf", data: pdfB64 } }); else parts.push({ text: txtContent }); parts.push({ text: `Çoktan seçmeli soruları çıkar. SADECE JSON dizisi döndür: [{"text":"Soru","options":[${exampleOpts}],"correct":0}]` });
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { responseMimeType: "application/json" } }) });
-    const data = await res.json(); draftQuestions=[...draftQuestions,...JSON.parse(data.candidates[0].content.parts[0].text.trim())]; renderDraftQ(); showToast(`✅ Sorular eklendi!`);
+    const data = await res.json(); draftQuestions=[...draftQuestions,...JSON.parse(data.candidates[0].content.parts[0].text.trim())]; renderDraftQ(); showToast(`✅ Sorular eklendi! Şıkları ve metinleri düzenleyebilirsiniz.`);
   } catch(e){ alert(`HATA:\n\n${e.message}`); } finally{ hideLoader(); }
 }
 
@@ -483,17 +541,28 @@ async function uploadQImage(input, qIndex) {
 }
 
 function renderDraftQ(){
-  const list = document.getElementById('draft-q-list'); if(draftQuestions.length === 0) { list.innerHTML = 'Soru yok.'; return; }
+  const list = document.getElementById('draft-q-list'); if(draftQuestions.length === 0) { list.innerHTML = '<p style="color:var(--ink3); text-align:center;">Henüz soru eklenmedi.</p>'; return; }
   list.innerHTML=draftQuestions.map((q,i)=> `<div class="card" style="border-left: 5px solid var(--primary); background:#f8fafc;">
-    <div><strong>Soru ${i+1}:</strong> ${q.text}</div>${q.image ? `<img src="${q.image}" style="max-height:200px; margin-top:16px; border-radius:10px;">` : ''}
-    <div style="margin-top:16px; background:white; padding:12px; border-radius:8px;">${q.options.map((o,j)=>`<div style="${j===q.correct?'color:var(--correct);font-weight:bold;':''}">${LETTERS[j]}) ${o}</div>`).join('')}</div>
+    <div style="display:flex; align-items:center;">
+      <strong style="width:70px; color:var(--ink);">Soru ${i+1}:</strong> 
+      <input type="text" class="field" style="flex:1; margin:0; padding:10px; font-weight:bold;" value="${(q.text || '').replace(/"/g, '&quot;')}" placeholder="Soru metnini buraya yazın..." onchange="draftQuestions[${i}].text=this.value">
+    </div>
+    ${q.image ? `<img src="${q.image}" style="max-height:300px; width:auto; margin-top:16px; border-radius:10px; border:1px solid var(--border);">` : ''}
+    <div style="margin-top:16px; background:white; padding:16px; border-radius:8px; border:1px solid var(--border);">
+      ${q.options.map((o,j)=>`
+        <div style="display:flex; align-items:center; margin-bottom:10px;">
+          <input type="radio" name="correct_${i}" ${j===q.correct?'checked':''} onchange="draftQuestions[${i}].correct=${j}" style="cursor:pointer; width:18px; height:18px;">
+          <strong style="margin:0 12px; font-size:1.1rem; color:var(--ink3);">${LETTERS[j]})</strong> 
+          <input type="text" class="field" style="flex:1; margin:0; padding:8px;" value="${(o || '').replace(/"/g, '&quot;')}" placeholder="Şık metni (Fotoğraflı sorularda boş bırakabilirsiniz)" onchange="draftQuestions[${i}].options[${j}]=this.value">
+        </div>
+      `).join('')}
+    </div>
     <div style="display:flex; gap:12px; margin-top:16px; justify-content:flex-end;">
-      <label class="btn btn-secondary btn-sm" style="cursor:pointer;">📷 Görsel Ekle <input type="file" style="display:none;" accept="image/*" onchange="uploadQImage(this, ${i})"></label>
-      <button class="btn btn-danger btn-sm" onclick="removeDraftQ(${i})">Sil</button>
+      <label class="btn btn-secondary btn-sm" style="cursor:pointer;">📷 Fotoğraf Değiştir/Ekle <input type="file" style="display:none;" accept="image/*" onchange="uploadQImage(this, ${i})"></label>
+      <button class="btn btn-danger btn-sm" onclick="removeDraftQ(${i})">Soruyu Sil</button>
     </div></div>`).join('');
 }
 function removeDraftQ(i){ draftQuestions.splice(i,1); renderDraftQ(); }
-
 async function saveQuiz(){
   const name=document.getElementById('new-quiz-name').value.trim(); const timeLimit=parseInt(document.getElementById('new-quiz-time').value) || 0;
   if(!name || draftQuestions.length===0){ showToast('⚠️ Sınav adı ve soru gerekli.'); return; } showLoader('Kaydediliyor...');
