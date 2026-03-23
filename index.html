@@ -341,14 +341,18 @@ async function renderStudentDashboard() {
           <th style="padding:10px;">Yanlış</th>
           <th style="padding:10px;">Boş</th>
           <th style="padding:10px;">Puan</th>
+          <th style="padding:10px;">Analiz</th>
         </tr>
         ${pastResults.map(r => `
           <tr style="border-bottom:1px solid #e2e8f0;">
-            <td style="padding:10px;">${r.quiz_title || 'Sınav'}</td>
+            <td style="padding:10px;">${r.quiz_title || 'Deneme Sınavı'}</td>
             <td style="padding:10px; color:var(--correct); font-weight:bold;">${r.correct}</td>
             <td style="padding:10px; color:var(--wrong); font-weight:bold;">${r.wrong}</td>
             <td style="padding:10px; color:var(--ink3);">${r.empty}</td>
             <td style="padding:10px; font-weight:bold;">${r.score ? r.score.toFixed(2) : '0.00'}</td>
+            <td style="padding:10px;">
+                <button class="btn btn-primary btn-sm" style="background:#8b5cf6; border:none;" onclick="getAIClassReport('${r.quiz_id}', '${r.quiz_title}')">🤖 AI Raporu</button>
+            </td>
           </tr>
         `).join('')}
       </table>`;
@@ -365,7 +369,7 @@ async function renderStudentDashboard() {
         
         return `
         <div style="padding:12px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-          <div><strong>${q.title}</strong> <span style="color:var(--ink3); font-size:0.9rem; margin-left:10px;">(${q.questions ? q.questions.length : 0} Soru)</span></div>
+          <div><strong>${q.name}</strong> <span style="color:var(--ink3); font-size:0.9rem; margin-left:10px;">(${q.questions ? q.questions.length : 0} Soru)</span></div>
           ${isCompleted 
             ? `<button class="btn btn-secondary btn-sm" disabled>✅ Çözüldü</button>` 
             : `<button class="btn btn-primary btn-sm" onclick="startQuiz('${q.id}')">Sınava Başla</button>`
