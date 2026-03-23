@@ -760,6 +760,30 @@ async function changeMyPassword() {
     showToast('❌ Güncelleme sırasında hata oluştu.');
   } finally { hideLoader(); }
 }
+  function startTimer() {
+    // Varsa eski sayacı sıfırla
+    if (typeof timerInterval !== 'undefined' && timerInterval) clearInterval(timerInterval);
+    
+    // Sınav süresini al (Yoksa varsayılan 30 dakika yap)
+    timeRemaining = (currentQuiz.duration || 30) * 60; 
+    
+    // Saniyede bir geriye say
+    timerInterval = setInterval(() => {
+        timeRemaining--;
+        
+        // Ekranda süreyi güncelleyen fonksiyon varsa çalıştır
+        if (typeof updateTimerDisplay === 'function') {
+            updateTimerDisplay();
+        }
+        
+        // Süre biterse sınavı otomatik bitir
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            alert('⏳ Süre doldu! Sınavınız otomatik olarak bitiriliyor.');
+            finishQuiz(true); // true = zaman bitti demek
+        }
+    }, 1000);
+}
   async function startQuiz(quizId) {
   showLoader('Sınav yükleniyor...');
   try {
