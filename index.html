@@ -699,6 +699,31 @@ async function finishQuiz(isTimeUp = false) {
 async function askAI(qIndex) { const box = document.getElementById(`ai-box-${qIndex}`); box.classList.add('show'); box.innerHTML = '<div class="spin" style="width:20px;height:20px; border-width:2px; display:inline-block; vertical-align:middle;"></div> Yapay Zeka Düşünüyor...'; const q = currentQuiz.questions[qIndex]; const studentAns = q.options[quizAnswers[qIndex]]; const correctAns = q.options[q.correct]; const prompt = `Öğrencim şu soruyu yanlış yaptı: "${q.text}" Doğru Cevap: "${correctAns}" Seçtiği Yanlış Cevap: "${studentAns}" Öğrenciye hitaben neden yanlış yaptığını ve doğru cevabın mantığını motive edici bir dille açıkla.`; try { const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "text/plain" } }) }); const data = await res.json(); box.innerHTML = `<strong>✨ Yapay Zeka:</strong><br>${data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}`; } catch(e) { box.innerHTML = '❌ Hata.'; } }
 
 async function viewQuizResults(quizId, quizName) { showLoader('Sonuçlar getiriliyor...'); try { const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}&institution_id=eq.${currentInstitution.id}`); if(!results || results.length === 0) { hideLoader(); return showToast("⚠️ Sonuç yok."); } results.sort((a,b) => b.net - a.net); let bulkText = `🏆 *${quizName} Sınav Sonuçları* 🏆\n\n`; results.forEach((r, i) => { bulkText += `${i + 1}. ${r.student_name} - ${parseFloat(r.net).toFixed(2)} Net\n`; }); bulkText += `\nDetaylı analiz için platformumuzu ziyaret edebilirsiniz. İyi çalışmalar dilerim. - ${currentTeacher.name}`; window._currentBulkText = bulkText; let html = `<div class="card" style="border-top: 4px solid var(--primary);"><div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px; flex-wrap:wrap; gap:10px;"><h2 style="margin:0; color:var(--primary);">📊 Analiz: ${quizName}</h2><div style="display:flex; gap:10px;"><button class="btn btn-sm" style="background:#25D366; color:white; font-size:0.95rem; padding:8px 16px;" onclick="navigator.clipboard.writeText(window._currentBulkText).then(()=>showToast('✅ Kopyalandı!'));">📋 Sınıf Grubuna Kopyala</button><button class="btn btn-ghost" onclick="switchTab('quizzes')">← Dön</button></div></div><div style="overflow-x:auto;"><table><tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Özel Veli Mesajı</th></tr>${results.map((r, i) => { const msg = `Sayın Velimiz, öğrenciniz ${r.student_name} bugünkü "${quizName}" sınavında ${r.correct} Doğru, ${r.wrong} Yanlış, ${r.blank} Boş ile ${parseFloat(r.net).toFixed(2)} Net yapmıştır. Gelişimini takip edebilirsiniz. İyi günler dilerim. - ${currentTeacher.name}`; const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`; return `<tr><td><strong style="color:var(--ink3);">${i + 1}</strong></td><td><strong>${r.student_name}</strong></td><td>${r.student_number}</td><td style="color:var(--correct); font-weight:bold;">${r.correct}</td><td style="color:var(--wrong); font-weight:bold;">${r.wrong}</td><td style="color:var(--ink3);">${r.blank}</td><td><span style="background:#e0e7ff; color:var(--primary); padding:6px 12px; border-radius:12px; font-weight:bold;">${parseFloat(r.net).toFixed(2)}</span></td><td><a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25D366; color:white; text-decoration:none; display:inline-block; padding:8px 12px; font-weight:bold;">💬 Gönder</a></td></tr>`; }).join('')}</table></div></div>`; document.getElementById('tab-body').innerHTML = html; } catch (error) { showToast("❌ Hata."); } finally { hideLoader(); } }
+  async function callGeminiAI(prompt) {
+    // ⚠️ DİKKAT: Buraya kendi Gemini API Anahtarını tırnakları silmeden yapıştırmalısın!
+    const apiKey = 'AIzaSyBOvmLNACzw" + "U4xRrJbNnNdyhagNpCcTcB4'; 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        if (!response.ok) throw new Error("API yanıt vermedi!");
+
+        const data = await response.json();
+        // Gemini'nin gönderdiği muazzam raporu alıp sisteme geri veriyoruz
+        return data.candidates[0].content.parts[0].text; 
+        
+    } catch (error) {
+        console.error("API Bağlantı Hatası:", error);
+        return "⚠️ Yapay zeka ile bağlantı kurulamadı. Lütfen API anahtarınızı kontrol edin.";
+    }
+}
 async function getAIClassReport(quizId, quizName) {
     console.log("Eğitim Koçu Raporu Hazırlanıyor... ID:", quizId);
     showLoader('Yapay Zeka Analiz Ediyor...');
