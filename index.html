@@ -741,39 +741,51 @@ async function getAIClassReport(quizId, quizName) {
             return;
         }
 
-       // 1. Sınav adı 'null' gelirse otomatik olarak 'Genel Deneme Sınavı' yazsın
+        // 1. Sınav adı 'null' gelirse otomatik düzeltme
         let examName = (quizName && quizName !== 'null' && quizName !== 'undefined') ? quizName : 'Genel Deneme Sınavı';
 
-        const studentStats = results.map(r => `${r.student_name}: ${r.correct} Doğru, ${r.wrong} Yanlış, Net: ${r.net}`).join('\n');
+        // 2. Yapay Zekanın karıştırmaması için verileri körün bile okuyacağı netlikte yazıyoruz
+        const studentStats = results.map(r => `- ÖĞRENCİ: ${r.student_name} | DOĞRU SAYISI: ${r.correct} | YANLIŞ SAYISI: ${r.wrong} | ALDIĞI PUAN: ${r.score || r.net || 0}`).join('\n');
         
-        // 2. YAPAY ZEKAYA KESİN EMİRLER VERİYORUZ
+        // 3. YAPAY ZEKAYA KESİN VE ACIMASIZ EMİRLER
         const prompt = `
             Sen profesyonel, otoriter ama motive edici bir eğitim koçusun. 
-            Öğrencilerin "${examName}" adlı sınava ait sonuçları aşağıdadır:
+            Aşağıda "${examName}" adlı sınava giren öğrencilerin sonuçları NET BİR ŞEKİLDE verilmiştir:
             
             ${studentStats}
             
-            DİKKAT ETMEN GEREKEN KURALLAR:
-            1. "Konu içeriğini bilmiyorum", "Veriler eksik" gibi mazeretler ASLA üretmeyeceksin! 
-            2. Elindeki doğru/yanlış/net sayılarına bakarak öğrencilerin sınav stratejilerini, dikkat eksikliklerini veya zaman yönetimi problemlerini analiz et.
-            3. Başarılı öğrencilere rehavete kapılmamaları için uyarılar yap.
-            4. Neti düşük öğrencilere test çözme teknikleri, odaklanma veya genel çalışma prensipleri hakkında nokta atışı taktikler ver.
-            5. Çıktın doğrudan konuya giren, şık ve profesyonel bir rapor olsun.
+            DİKKAT ETMEN GEREKEN KESİN KURALLAR:
+            1. Yukarıdaki "DOĞRU SAYISI" ve "YANLIŞ SAYISI" verilerini ÇOK DİKKATLİ oku. Asla doğru/yanlış sayılarını uydurma veya karıştırma! Kim ne yaptıysa sadece onu değerlendir.
+            2. "Konu içeriğini bilmiyorum", "Veriler eksik" gibi mazeretler ASLA üretmeyeceksin! Sadece elindeki doğru/yanlış sayılarına bakarak test çözme teknikleri, odaklanma ve sınav stratejisi koçluğu yap.
+            3. Analizi asla yarıda kesme! Her bir öğrenci için tam, eksiksiz ve ismine özel bir değerlendirme paragrafı yaz.
+            4. Çıktın doğrudan konuya giren, şık ve profesyonel bir metin olsun.
         `;
 
-        // Not: Eğer senin kodundaki yapay zeka fonksiyonunun adı askAI değilse, aşağıyı ona göre değiştir.
+        // 4. Gemini'yi çağırıyoruz
         const report = await callGeminiAI(prompt); 
 
         hideLoader();
-        // Raporu şık bir şekilde ekrana bas
-        alert("🤖 YAPAY ZEKA EĞİTİM KOÇU RAPORU\n\n" + report);
+        
+        // 5. İLKEL KUTUYU ÇÖPE ATTIK -> OTOMATİK İNDİRME SİSTEMİ DEVREDE
+        showToast('✅ Rapor başarıyla hazırlandı, cihazınıza indiriliyor...');
+
+        const dosyaIcerigi = `🎓 ${examName} - YAPAY ZEKA EĞİTİM KOÇU RAPORU 🎓\n\n` + report;
+        const blob = new Blob([dosyaIcerigi], { type: 'text/plain;charset=utf-8' });
+        
+        const indirLink = document.createElement('a');
+        indirLink.href = URL.createObjectURL(blob);
+        indirLink.download = `${examName}_YapayZeka_Koc_Raporu.txt`; 
+        document.body.appendChild(indirLink);
+        indirLink.click();
+        document.body.removeChild(indirLink);
 
     } catch (e) {
         console.error("AI Koç Hatası:", e);
-        showToast('❌ Yapay zeka şu an rapor hazırlayamıyor.');
+        showToast('❌ Yapay zeka şu an rapor hazırlayamıyor. F12 Konsoluna bakınız.');
     } finally {
         hideLoader();
     }
+}
 }// --- YENİ ÖĞRETMEN KAYIT SİSTEMİ ---
 async function registerTeacher() {
   const instPw = document.getElementById('reg-inst-pw').value.trim();
