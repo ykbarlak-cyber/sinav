@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8">f
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Eğitim Platformu V10.0 - SaaS</title>
 <link rel="manifest" href="manifest.json">
@@ -325,19 +325,12 @@ async function renderStudentDashboard() {
   const leaderDiv = document.getElementById('student-leaderboard');
 
   try {
-    const activeQuizzes = await sbFetch(`quizzes?institution_id=eq.${currentInstitution.id}&class_id=eq.${currentStudent.class_id}&is_active=eq.true`);
-    if (activeQuizzes.length === 0) {
-      actDiv.innerHTML = '<div style="color:var(--ink3); padding:10px 0;">Şu an aktif bir sınav bulunmuyor.</div>';
-    } else {
-      actDiv.innerHTML = activeQuizzes.map(q => `
-        <div style="padding:12px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-          <div><strong>${q.name}</strong> <span style="color:var(--ink3); font-size:0.9rem; margin-left:10px;">(${q.questions.length} Soru)</span></div>
-          <button class="btn btn-primary btn-sm" onclick="startQuiz('${q.id}')">Sınava Başla</button>
-        </div>
-      `).join('');
-    }
+    // 1. ÖNCE GEÇMİŞ SONUÇLARI ÇEKİYORUZ (İsme göre aratıyoruz ki bulsun)
+    const pastResults = await sbFetch(`quiz_results?student_name=eq.${currentStudent.name}&institution_id=eq.${currentInstitution.id}`);
+    
+    // Çözdüğü sınavların ID'lerini bir listeye alalım (Aktif sınav butonlarını kapatmak için)
+    const completedQuizIds = pastResults.map(r => r.quiz_id);
 
-    const pastResults = await sbFetch(`quiz_results?student_id=eq.${currentStudent.id}&institution_id=eq.${currentInstitution.id}`);
     if (pastResults.length === 0) {
       pastDiv.innerHTML = '<div style="color:var(--ink3); padding:10px 0;">Henüz katıldığın bir sınav yok.</div>';
     } else {
@@ -361,6 +354,27 @@ async function renderStudentDashboard() {
       </table>`;
     }
 
+    // 2. AKTİF SINAVLARI ÇEK VE ÇÖZÜLENLERİ KİLİTLE
+    const activeQuizzes = await sbFetch(`quizzes?institution_id=eq.${currentInstitution.id}&class_id=eq.${currentStudent.class_id}&is_active=eq.true`);
+    if (activeQuizzes.length === 0) {
+      actDiv.innerHTML = '<div style="color:var(--ink3); padding:10px 0;">Şu an aktif bir sınav bulunmuyor.</div>';
+    } else {
+      actDiv.innerHTML = activeQuizzes.map(q => {
+        // Bu sınavın ID'si, çocuğun çözdükleri listesinde var mı?
+        const isCompleted = completedQuizIds.includes(q.id);
+        
+        return `
+        <div style="padding:12px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+          <div><strong>${q.title}</strong> <span style="color:var(--ink3); font-size:0.9rem; margin-left:10px;">(${q.questions ? q.questions.length : 0} Soru)</span></div>
+          ${isCompleted 
+            ? `<button class="btn btn-secondary btn-sm" disabled>✅ Çözüldü</button>` 
+            : `<button class="btn btn-primary btn-sm" onclick="startQuiz('${q.id}')">Sınava Başla</button>`
+          }
+        </div>
+      `}).join('');
+    }
+
+    // 3. LİDERLİK TABLOSU
     const allClassResults = await sbFetch(`quiz_results?institution_id=eq.${currentInstitution.id}&class_id=eq.${currentStudent.class_id}`);
     if (allClassResults.length === 0) {
       leaderDiv.innerHTML = '<div style="color:var(--ink3); font-size:0.9rem;">Henüz sıralama oluşmadı.</div>';
