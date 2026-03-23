@@ -741,21 +741,24 @@ async function getAIClassReport(quizId, quizName) {
             return;
         }
 
+       // 1. Sınav adı 'null' gelirse otomatik olarak 'Genel Deneme Sınavı' yazsın
+        let examName = (quizName && quizName !== 'null' && quizName !== 'undefined') ? quizName : 'Genel Deneme Sınavı';
+
         const studentStats = results.map(r => `${r.student_name}: ${r.correct} Doğru, ${r.wrong} Yanlış, Net: ${r.net}`).join('\n');
         
-        // İŞTE SENİN İSTEDİĞİN O MUAZZAM YAPAY ZEKA EMRİ:
+        // 2. YAPAY ZEKAYA KESİN EMİRLER VERİYORUZ
         const prompt = `
-            Sen uzman bir eğitim danışmanı ve öğrenci koçusun. 
-            Aşağıda "${quizName}" adlı sınavın sonuçları var:
+            Sen profesyonel, otoriter ama motive edici bir eğitim koçusun. 
+            Öğrencilerin "${examName}" adlı sınava ait sonuçları aşağıdadır:
             
             ${studentStats}
             
-            Senden sadece kimin kaç doğru yaptığını saymanı İSTEMİYORUM. Şunları yapmanı istiyorum:
-            1. EKSİK ANALİZİ: Bu sonuçlara göre öğrencilerin hangi konularda zayıf olduğunu ve neyi anlamadıklarını tahmin et/analiz et.
-            2. ÇALIŞMA PROGRAMI: Bu eksikleri kapatmaları için onlara nokta atışı tavsiyeler ver. Hangi gün ne tür bir çalışma yapmalılar?
-            3. STRATEJİ: Sonraki sınavda netlerini artırmak için nasıl bir taktik izlemeliler?
-            
-            Öğrencilere hitap eden, motive edici, net ve uygulanabilir bir koçluk raporu hazırla.
+            DİKKAT ETMEN GEREKEN KURALLAR:
+            1. "Konu içeriğini bilmiyorum", "Veriler eksik" gibi mazeretler ASLA üretmeyeceksin! 
+            2. Elindeki doğru/yanlış/net sayılarına bakarak öğrencilerin sınav stratejilerini, dikkat eksikliklerini veya zaman yönetimi problemlerini analiz et.
+            3. Başarılı öğrencilere rehavete kapılmamaları için uyarılar yap.
+            4. Neti düşük öğrencilere test çözme teknikleri, odaklanma veya genel çalışma prensipleri hakkında nokta atışı taktikler ver.
+            5. Çıktın doğrudan konuya giren, şık ve profesyonel bir rapor olsun.
         `;
 
         // Not: Eğer senin kodundaki yapay zeka fonksiyonunun adı askAI değilse, aşağıyı ona göre değiştir.
