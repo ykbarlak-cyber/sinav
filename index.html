@@ -734,7 +734,14 @@ async function getAIClassReport(quizId, quizName) {
     showLoader('Yapay Zeka Analiz Ediyor...');
     
     try {
-        const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`);
+        let query = `quiz_results?quiz_id=eq.${quizId}`;
+        
+        // 🔐 GİZLİLİK FİLTRESİ: Eğer giriş yapan bir öğrenciyse, sadece kendi sonucunu getir!
+        if (typeof currentStudent !== 'undefined' && currentStudent && currentStudent.id) {
+            query += `&student_id=eq.${currentStudent.id}`;
+        }
+
+        const results = await sbFetch(query);
         
         if (!results || results.length === 0) {
             showToast('❌ Bu sınava ait veri bulunamadı.');
