@@ -631,8 +631,67 @@ function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { cons
 function updateTimerDisplay() { const m = Math.floor(timeRemaining / 60).toString().padStart(2, '0'); const s = (timeRemaining % 60).toString().padStart(2, '0'); document.getElementById('q-timer').textContent = `⏳ ${m}:${s}`; }
 function renderQCard(){ const q=currentQuiz.questions[currentQIdx]; document.getElementById('q-ctr').textContent = `Soru: ${currentQIdx+1} / ${currentQuiz.questions.length}`; document.getElementById('q-card-area').innerHTML= `<div class="card" style="box-shadow:none; border:2px solid var(--border);"><div style="font-size:1.2rem; font-weight:500; margin-bottom:20px;">${q.text}</div>${q.image ? `<img src="${q.image}" style="max-width:100%; max-height:400px; border-radius:12px; margin-bottom:24px;">` : ''}<div>${q.options.map((opt,i)=> `<div class="option-row ${quizAnswers[currentQIdx]===i?'sel':''}" onclick="pickAnswer(${i})"><strong>${LETTERS[i]}</strong> <span style="margin-left:8px">${opt}</span></div>`).join('')}</div></div>`; document.getElementById('q-prev').disabled = currentQIdx===0; const nb=document.getElementById('q-next'); if(currentQIdx === currentQuiz.questions.length-1){ nb.textContent='Sınavı Bitir ✓'; nb.className='btn btn-excel'; nb.onclick=()=>finishQuiz(false); } else { nb.textContent='Sonraki Soru →'; nb.className='btn btn-primary'; nb.onclick=()=>qNav(1); } }
 function pickAnswer(i){ quizAnswers[currentQIdx]=i; renderQCard(); } function qNav(dir){ currentQIdx+=dir; renderQCard(); }
-async function finishQuiz(isTimeUp = false){ const blank=currentQuiz.questions.length-Object.keys(quizAnswers).length; if(!isTimeUp && blank>0 && !confirm(`⚠️ ${blank} boş var. Bitirilsin mi?`)) return; if(timerInterval) clearInterval(timerInterval); showLoader('Hesaplanıyor...'); let correct=0, wrong=0; currentQuiz.questions.forEach((q,i)=>{ if(quizAnswers[i]!==undefined) { if(quizAnswers[i]===q.correct) correct++; else wrong++; } }); let net = correct - (wrong / 4); try { await sbFetch('quiz_results', { method: 'POST', body: JSON.stringify({ quiz_id: currentQuiz.id, class_id: currentQuiz.class_id, branch: currentQuiz.branch, student_name: currentStudent.name, student_number: currentStudent.student_number, correct: correct, wrong: wrong, blank: blank, net: net, institution_id: currentInstitution.id }) }); } catch(e) {} hideLoader(); document.getElementById('r-pct').textContent = net.toFixed(2); document.getElementById('r-correct').textContent = correct; document.getElementById('r-wrong').textContent = wrong; document.getElementById('r-blank').textContent = blank; if(correct / currentQuiz.questions.length >= 0.8) { document.getElementById('r-title').textContent = 'Tebrikler! 🎉'; document.getElementById('r-emoji').textContent = '🏆'; confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 } }); } else { document.getElementById('r-title').textContent = 'Sınavı Tamamladınız'; document.getElementById('r-emoji').textContent = '📝'; } document.getElementById('r-sub').textContent = `${currentStudent.name}, sonuçların kaydedildi.`; document.getElementById('review-area').style.display='none'; showScreen('s-result'); }
-function toggleReview(){ const area = document.getElementById('review-area'); if(area.style.display==='block') { area.style.display='none'; return; } area.style.display='block'; const list=document.getElementById('review-list'); list.innerHTML=''; currentQuiz.questions.forEach((q,i)=>{ const ua=quizAnswers[i]; let badge = ua===undefined?'⚪ BOŞ': ua===q.correct?'✅ DOĞRU': '❌ YANLIŞ'; let aiButtonHTML = (ua !== undefined && ua !== q.correct) ? `<button class="btn btn-sm btn-ai" style="margin-top:16px; width:100%; padding:10px;" onclick="askAI(${i})">✨ Bu Soruyu Yapay Zeka Anlatsın</button><div id="ai-box-${i}" class="ai-box"></div>` : ''; list.innerHTML += `<div class="card" style="margin-bottom:20px"><div style="display:flex; justify-content:space-between; margin-bottom:16px;"><strong>Soru ${i+1}</strong> ${badge}</div><div style="margin-bottom:16px; font-size:1.1rem;">${q.text}</div>${q.image ? `<img src="${q.image}" style="max-height:300px; margin-bottom:16px;">` : ''}${q.options.map((opt,j)=>{ let cls=''; if(j===q.correct) cls='ok'; else if(j===ua) cls='err'; return `<div class="option-row ${cls}"><strong>${LETTERS[j]}</strong> <span style="margin-left:8px">${opt}</span></div>`; }).join('')} ${aiButtonHTML} </div>`; }); area.scrollIntoView({behavior:'smooth'}); }
+async function finishQuiz(isTimeUp = false) { 
+    const blank = currentQuiz.questions.length - Object.keys(quizAnswers).length; 
+    if(!isTimeUp && blank > 0 && !confirm(`⚠️ ${blank} boş var. Bitirilsin mi?`)) return; 
+    
+    if(timerInterval) clearInterval(timerInterval); 
+    showLoader('Hesaplanıyor...'); 
+    
+    let correct = 0, wrong = 0; 
+    currentQuiz.questions.forEach((q,i) => { 
+        if(quizAnswers[i] !== undefined) { 
+            if(quizAnswers[i] === q.correct) correct++; 
+            else wrong++; 
+        } 
+    }); 
+    
+    let net = correct - (wrong / 4); 
+    // İŞTE EKSİK OLAN SİHİRLİ FORMÜL BURASI (100 Üzerinden Puanlama)
+    let finalScore = Math.max(0, (net / currentQuiz.questions.length) * 100);
+
+    try { 
+        await sbFetch('quiz_results', { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                quiz_id: currentQuiz.id, 
+                quiz_title: currentQuiz.title, // Sınavın adı da gitsin ki tabloda görünsün
+                class_id: currentQuiz.class_id, 
+                branch: currentQuiz.branch, 
+                student_name: currentStudent.name, 
+                student_number: currentStudent.student_number, 
+                correct: correct, 
+                wrong: wrong, 
+                blank: blank, 
+                net: net, 
+                score: finalScore, // 100 üzerinden hesaplanan puanı veritabanına yolluyoruz!
+                institution_id: currentInstitution.id 
+            }) 
+        }); 
+    } catch(e) {
+        console.error(e);
+    } 
+    
+    hideLoader(); 
+    document.getElementById('r-pct').textContent = finalScore.toFixed(2); // Ekranda da puan yazsın
+    document.getElementById('r-correct').textContent = correct; 
+    document.getElementById('r-wrong').textContent = wrong; 
+    document.getElementById('r-blank').textContent = blank; 
+    
+    if(correct / currentQuiz.questions.length >= 0.8) { 
+        document.getElementById('r-title').textContent = 'Tebrikler! 🎉'; 
+        document.getElementById('r-emoji').textContent = '🏆'; 
+        confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 } }); 
+    } else { 
+        document.getElementById('r-title').textContent = 'Sınavı Tamamladınız'; 
+        document.getElementById('r-emoji').textContent = '📝'; 
+    } 
+    
+    document.getElementById('r-sub').textContent = `${currentStudent.name}, sonuçların kaydedildi.`; 
+    document.getElementById('review-area').style.display = 'none'; 
+    showScreen('s-result'); 
+}
+  function toggleReview(){ const area = document.getElementById('review-area'); if(area.style.display==='block') { area.style.display='none'; return; } area.style.display='block'; const list=document.getElementById('review-list'); list.innerHTML=''; currentQuiz.questions.forEach((q,i)=>{ const ua=quizAnswers[i]; let badge = ua===undefined?'⚪ BOŞ': ua===q.correct?'✅ DOĞRU': '❌ YANLIŞ'; let aiButtonHTML = (ua !== undefined && ua !== q.correct) ? `<button class="btn btn-sm btn-ai" style="margin-top:16px; width:100%; padding:10px;" onclick="askAI(${i})">✨ Bu Soruyu Yapay Zeka Anlatsın</button><div id="ai-box-${i}" class="ai-box"></div>` : ''; list.innerHTML += `<div class="card" style="margin-bottom:20px"><div style="display:flex; justify-content:space-between; margin-bottom:16px;"><strong>Soru ${i+1}</strong> ${badge}</div><div style="margin-bottom:16px; font-size:1.1rem;">${q.text}</div>${q.image ? `<img src="${q.image}" style="max-height:300px; margin-bottom:16px;">` : ''}${q.options.map((opt,j)=>{ let cls=''; if(j===q.correct) cls='ok'; else if(j===ua) cls='err'; return `<div class="option-row ${cls}"><strong>${LETTERS[j]}</strong> <span style="margin-left:8px">${opt}</span></div>`; }).join('')} ${aiButtonHTML} </div>`; }); area.scrollIntoView({behavior:'smooth'}); }
 async function askAI(qIndex) { const box = document.getElementById(`ai-box-${qIndex}`); box.classList.add('show'); box.innerHTML = '<div class="spin" style="width:20px;height:20px; border-width:2px; display:inline-block; vertical-align:middle;"></div> Yapay Zeka Düşünüyor...'; const q = currentQuiz.questions[qIndex]; const studentAns = q.options[quizAnswers[qIndex]]; const correctAns = q.options[q.correct]; const prompt = `Öğrencim şu soruyu yanlış yaptı: "${q.text}" Doğru Cevap: "${correctAns}" Seçtiği Yanlış Cevap: "${studentAns}" Öğrenciye hitaben neden yanlış yaptığını ve doğru cevabın mantığını motive edici bir dille açıkla.`; try { const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "text/plain" } }) }); const data = await res.json(); box.innerHTML = `<strong>✨ Yapay Zeka:</strong><br>${data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}`; } catch(e) { box.innerHTML = '❌ Hata.'; } }
 
 async function viewQuizResults(quizId, quizName) { showLoader('Sonuçlar getiriliyor...'); try { const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}&institution_id=eq.${currentInstitution.id}`); if(!results || results.length === 0) { hideLoader(); return showToast("⚠️ Sonuç yok."); } results.sort((a,b) => b.net - a.net); let bulkText = `🏆 *${quizName} Sınav Sonuçları* 🏆\n\n`; results.forEach((r, i) => { bulkText += `${i + 1}. ${r.student_name} - ${parseFloat(r.net).toFixed(2)} Net\n`; }); bulkText += `\nDetaylı analiz için platformumuzu ziyaret edebilirsiniz. İyi çalışmalar dilerim. - ${currentTeacher.name}`; window._currentBulkText = bulkText; let html = `<div class="card" style="border-top: 4px solid var(--primary);"><div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px; flex-wrap:wrap; gap:10px;"><h2 style="margin:0; color:var(--primary);">📊 Analiz: ${quizName}</h2><div style="display:flex; gap:10px;"><button class="btn btn-sm" style="background:#25D366; color:white; font-size:0.95rem; padding:8px 16px;" onclick="navigator.clipboard.writeText(window._currentBulkText).then(()=>showToast('✅ Kopyalandı!'));">📋 Sınıf Grubuna Kopyala</button><button class="btn btn-ghost" onclick="switchTab('quizzes')">← Dön</button></div></div><div style="overflow-x:auto;"><table><tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Özel Veli Mesajı</th></tr>${results.map((r, i) => { const msg = `Sayın Velimiz, öğrenciniz ${r.student_name} bugünkü "${quizName}" sınavında ${r.correct} Doğru, ${r.wrong} Yanlış, ${r.blank} Boş ile ${parseFloat(r.net).toFixed(2)} Net yapmıştır. Gelişimini takip edebilirsiniz. İyi günler dilerim. - ${currentTeacher.name}`; const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`; return `<tr><td><strong style="color:var(--ink3);">${i + 1}</strong></td><td><strong>${r.student_name}</strong></td><td>${r.student_number}</td><td style="color:var(--correct); font-weight:bold;">${r.correct}</td><td style="color:var(--wrong); font-weight:bold;">${r.wrong}</td><td style="color:var(--ink3);">${r.blank}</td><td><span style="background:#e0e7ff; color:var(--primary); padding:6px 12px; border-radius:12px; font-weight:bold;">${parseFloat(r.net).toFixed(2)}</span></td><td><a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25D366; color:white; text-decoration:none; display:inline-block; padding:8px 12px; font-weight:bold;">💬 Gönder</a></td></tr>`; }).join('')}</table></div></div>`; document.getElementById('tab-body').innerHTML = html; } catch (error) { showToast("❌ Hata."); } finally { hideLoader(); } }
