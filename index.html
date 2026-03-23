@@ -730,65 +730,66 @@ async function callGeminiAI(prompt) {
     }
 }
 async function getAIClassReport(quizId, quizName) {
-    console.log("Eğitim Koçu Raporu Hazırlanıyor... ID:", quizId);
     showLoader('Yapay Zeka Analiz Ediyor...');
     
     try {
-        let query = `quiz_results?quiz_id=eq.${quizId}`;
-        
-        // 🔐 GİZLİLİK FİLTRESİ: Eğer giriş yapan bir öğrenciyse, sadece kendi sonucunu getir!
-        if (typeof currentStudent !== 'undefined' && currentStudent && currentStudent.id) {
-            query += `&student_id=eq.${currentStudent.id}`;
-        }
-
-        const results = await sbFetch(query);
+        // 1. Önce tüm sonuçları çekiyoruz (En garantisi bu)
+        const results = await sbFetch(`quiz_results?quiz_id=eq.${quizId}`);
         
         if (!results || results.length === 0) {
             showToast('❌ Bu sınava ait veri bulunamadı.');
             return;
         }
 
-        // 1. Sınav adı 'null' gelirse otomatik düzeltme
-        let examName = (quizName && quizName !== 'null' && quizName !== 'undefined') ? quizName : 'Genel Deneme Sınavı';
+        // 2. 🔐 GİZLİLİK FİLTRESİ: Eğer öğrenciyse sadece KENDİ verisini ayır
+        let filteredResults = results;
+        if (typeof currentStudent !== 'undefined' && currentStudent) {
+            const sName = currentStudent.name || currentStudent.student_name;
+            // İsme göre filtrele (Veritabanında isim kesin var)
+            filteredResults = results.filter(r => r.student_name === sName);
+        }
 
-        // 2. Yapay Zekanın karıştırmaması için verileri körün bile okuyacağı netlikte yazıyoruz
-        const studentStats = results.map(r => `- ÖĞRENCİ: ${r.student_name} | DOĞRU SAYISI: ${r.correct} | YANLIŞ SAYISI: ${r.wrong} | ALDIĞI PUAN: ${r.score || r.net || 0}`).join('\n');
+        if (filteredResults.length === 0) {
+            showToast('❌ Kendi verine ulaşılamadı. İsim eşleşmiyor olabilir.');
+            return;
+        }
+
+        // 3. Sınav adı düzeltme
+        let examName = (quizName && quizName !== 'null') ? quizName : 'Genel Deneme Sınavı';
+
+        // 4. Robotun asla hata yapmaması için veriyi tek satırda netleştiriyoruz
+        const studentStats = filteredResults.map(r => 
+            `ÖĞRENCİ: ${r.student_name} | DOĞRU: ${r.correct} | YANLIŞ: ${r.wrong} | NET: ${r.net || (r.correct - (r.wrong/4))}`
+        ).join('\n');
         
-        // 3. YAPAY ZEKAYA KESİN VE ACIMASIZ EMİRLER
         const prompt = `
-            Sen profesyonel, otoriter ama motive edici bir eğitim koçusun. 
-            Aşağıda "${examName}" adlı sınava giren öğrencilerin sonuçları NET BİR ŞEKİLDE verilmiştir:
-            
+            Sen profesyonel bir eğitim koçusun. Sadece şu veriye göre analiz yap:
             ${studentStats}
             
-            DİKKAT ETMEN GEREKEN KESİN KURALLAR:
-            1. Yukarıdaki "DOĞRU SAYISI" ve "YANLIŞ SAYISI" verilerini ÇOK DİKKATLİ oku. Asla doğru/yanlış sayılarını uydurma veya karıştırma! Kim ne yaptıysa sadece onu değerlendir.
-            2. "Konu içeriğini bilmiyorum", "Veriler eksik" gibi mazeretler ASLA üretmeyeceksin! Sadece elindeki doğru/yanlış sayılarına bakarak test çözme teknikleri, odaklanma ve sınav stratejisi koçluğu yap.
-            3. Analizi asla yarıda kesme! Her bir öğrenci için tam, eksiksiz ve ismine özel bir değerlendirme paragrafı yaz.
-            4. Çıktın doğrudan konuya giren, şık ve profesyonel bir metin olsun.
+            KURALLAR:
+            1. Sadece yukarıda adı geçen öğrenciye özel koçluk yap. Diğer öğrencilerden bahsetme.
+            2. Doğru ve Yanlış sayılarını ASLA karıştırma. (Örn: 3 Doğru varsa 3 Doğru de).
+            3. "Veri eksik" deme, elindeki sayılarla motive edici bir strateji yaz.
+            4. Analizi asla yarıda kesme, tam bir rapor sun.
         `;
 
-        // 4. Gemini'yi çağırıyoruz
         const report = await callGeminiAI(prompt); 
-
         hideLoader();
         
-        // 5. İLKEL KUTUYU ÇÖPE ATTIK -> OTOMATİK İNDİRME SİSTEMİ DEVREDE
-        showToast('✅ Rapor başarıyla hazırlandı, cihazınıza indiriliyor...');
-
-        const dosyaIcerigi = `🎓 ${examName} - YAPAY ZEKA EĞİTİM KOÇU RAPORU 🎓\n\n` + report;
+        // 5. ŞIK İNDİRME SİSTEMİ
+        showToast('✅ Raporun hazır, indiriliyor...');
+        const dosyaIcerigi = `🎓 ${examName} - KİŞİSEL AI KOÇLUK RAPORU 🎓\n\n` + report;
         const blob = new Blob([dosyaIcerigi], { type: 'text/plain;charset=utf-8' });
-        
         const indirLink = document.createElement('a');
         indirLink.href = URL.createObjectURL(blob);
-        indirLink.download = `${examName}_YapayZeka_Koc_Raporu.txt`; 
+        indirLink.download = `${currentStudent.name}_AI_Analiz.txt`;
         document.body.appendChild(indirLink);
         indirLink.click();
         document.body.removeChild(indirLink);
 
     } catch (e) {
-        console.error("AI Koç Hatası:", e);
-        showToast('❌ Yapay zeka şu an rapor hazırlayamıyor. F12 Konsoluna bakınız.');
+        console.error("Hata:", e);
+        showToast('❌ Bir hata oluştu.');
     } finally {
         hideLoader();
     }
