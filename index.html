@@ -646,8 +646,73 @@ async function extractFromFile(){ if(!pdfB64&&!txtContent){ showToast('Dosya se�
 async function uploadQImage(input, qIndex) { const file = input.files[0]; if(!file) return; showLoader('Resim yükleniyor...'); const ext = file.name.split('.').pop(); const fileName = Date.now() + '_' + Math.random().toString(36).substr(2,5) + '.' + ext; try { const res = await fetch(`${SUPABASE_URL}/storage/v1/object/quiz-images/${fileName}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'apikey': SUPABASE_KEY, 'Content-Type': file.type }, body: file }); if(!res.ok) throw new Error(await res.text()); draftQuestions[qIndex].image = `${SUPABASE_URL}/storage/v1/object/public/quiz-images/${fileName}`; showToast('✅ Resim eklendi!'); renderDraftQ(); } catch(e) { } finally { hideLoader(); input.value = ''; } }
 
 async function saveToBank(qIndex) { const q = draftQuestions[qIndex]; if(!q.text && !q.image) return showToast('⚠️ Boş soru kaydedilemez.'); showLoader('Havuza Kaydediliyor...'); try { await sbFetch('question_bank', { method: 'POST', body: JSON.stringify({ teacher_name: currentTeacher.name, text: q.text, image: q.image, options: q.options, correct: q.correct, institution_id: currentInstitution.id }) }); showToast('📚 Soru havuza eklendi!'); } catch(e) { } finally { hideLoader(); } }
-async function pullFromBank() { showLoader('Havuz taranıyor...'); try { const bank = await sbFetch(`question_bank?teacher_name=eq.${currentTeacher.name}&institution_id=eq.${currentInstitution.id}`); hideLoader(); if(!bank || bank.length === 0) return alert('Havuzunuzda soru yok.'); let count = prompt(`Toplam ${bank.length} soru var. Kaç soru çekmek istersiniz?`, "5"); if(!count || isNaN(count)) return; count = parseInt(count); const optCount = isMiddleSchool(activeClassId) ? 4 : 5; shuffleArray(bank); const selected = bank.slice(0, count); selected.forEach(bq => { let newOpts = [...bq.options]; while(newOpts.length < optCount) newOpts.push(""); if(newOpts.length > optCount) newOpts = newOpts.slice(0, optCount); let newCorrect = bq.correct; if(newCorrect >= optCount) newCorrect = 0; draftQuestions.push({ text: bq.text, image: bq.image, options: newOpts, correct: newCorrect }); }); renderDraftQ(); showToast(`✅ Çekildi!`); } catch(e) { hideLoader(); } }
-function renderDraftQ(){ const list = document.getElementById('draft-q-list'); if(draftQuestions.length === 0) { list.innerHTML = '<p style="color:var(--ink3); text-align:center;">Henüz soru eklenmedi.</p>'; return; } list.innerHTML=draftQuestions.map((q,i)=> `<div class="card" style="border-left: 5px solid var(--primary); background:#f8fafc; position:relative;"><div style="display:flex; align-items:center;"><strong style="width:70px; color:var(--ink);">Soru ${i+1}:</strong><input type="text" class="field" style="flex:1; margin:0; padding:10px; font-weight:bold;" value="${(q.text || '').replace(/"/g, '&quot;')}" placeholder="Soru metni..." onchange="draftQuestions[${i}].text=this.value"></div>${q.image ? `<img src="${q.image}" style="max-height:250px; margin-top:16px; border-radius:10px; border:1px solid var(--border);">` : ''}<div style="margin-top:16px; background:white; padding:16px; border-radius:8px; border:1px solid var(--border);">${q.options.map((o,j)=>`<div style="display:flex; align-items:center; margin-bottom:10px;"><input type="radio" name="correct_${i}" ${j===q.correct?'checked':''} onchange="draftQuestions[${i}].correct=${j}" style="cursor:pointer; width:18px; height:18px;"><strong style="margin:0 12px; font-size:1.1rem; color:var(--ink3);">${LETTERS[j]})</strong><input type="text" class="field" style="flex:1; margin:0; padding:8px;" value="${(o || '').replace(/"/g, '&quot;')}" placeholder="Şık metni" onchange="draftQuestions[${i}].options[${j}]=this.value"></div>`).join('')}</div><div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; justify-content:flex-end;"><button class="btn btn-ai btn-sm" onclick="saveToBank(${i})">💾 Soruyu Havuza At</button><label class="btn btn-secondary btn-sm" style="cursor:pointer;">📷 Fotoğraf Ekle <input type="file" style="display:none;" accept="image/*" onchange="uploadQImage(this, ${i})"></label><button class="btn btn-danger btn-sm" onclick="removeDraftQ(${i})">Soruyu Sil</button></div></div>`).join(''); }
+async function pullFromBank() { 
+    showLoader('Havuz taranıyor...'); 
+    try { 
+        const bank = await sbFetch(`question_bank?teacher_name=eq.${currentTeacher.name}&institution_id=eq.${currentInstitution.id}`); 
+        hideLoader(); 
+        if(!bank || bank.length === 0) return alert('Havuzunuzda soru yok.'); 
+        let count = prompt(`Toplam ${bank.length} soru var. Kaç soru çekmek istersiniz?`, "5"); 
+        if(!count || isNaN(count)) return; 
+        count = parseInt(count); 
+        const optCount = isMiddleSchool(activeClassId) ? 4 : 5; 
+        shuffleArray(bank); 
+        const selected = bank.slice(0, count); 
+        selected.forEach(bq => { 
+            let newOpts = [...bq.options]; 
+            while(newOpts.length < optCount) newOpts.push(""); 
+            if(newOpts.length > optCount) newOpts = newOpts.slice(0, optCount); 
+            let newCorrect = bq.correct; 
+            if(newCorrect >= optCount) newCorrect = 0; 
+            // V2.0: Havuzdan çekerken artık konuyu da hafızaya alıyor!
+            draftQuestions.push({ text: bq.text, image: bq.image, options: newOpts, correct: newCorrect, topic: bq.topic || "" }); 
+        }); 
+        renderDraftQ(); 
+        showToast(`✅ Çekildi!`); 
+    } catch(e) { 
+        hideLoader(); 
+    } 
+}
+
+function renderDraftQ(){ 
+    const list = document.getElementById('draft-q-list'); 
+    if(draftQuestions.length === 0) { 
+        list.innerHTML = '<p style="color:var(--ink3); text-align:center;">Henüz soru eklenmedi.</p>'; 
+        return; 
+    } 
+    list.innerHTML=draftQuestions.map((q,i)=> 
+        `<div class="card" style="border-left: 5px solid var(--primary); background:#f8fafc; position:relative;">
+            
+            <div style="display:flex; align-items:center;">
+                <strong style="width:70px; color:var(--ink);">Soru ${i+1}:</strong>
+                <input type="text" class="field" style="flex:1; margin:0; padding:10px; font-weight:bold;" value="${(q.text || '').replace(/"/g, '&quot;')}" placeholder="Soru metni..." onchange="draftQuestions[${i}].text=this.value">
+            </div>
+            
+            <div style="display:flex; align-items:center; margin-top:8px;">
+                <strong style="width:70px; color:var(--primary); font-size:0.9rem;">📚 Konu:</strong>
+                <input type="text" class="field" style="flex:1; margin:0; padding:8px; font-size:0.9rem; border:1px dashed var(--primary);" value="${(q.topic || '').replace(/"/g, '&quot;')}" placeholder="Bu sorunun konusu ne? (Örn: Üslü Sayılar, İklim Tipleri...)" onchange="draftQuestions[${i}].topic=this.value">
+            </div>
+            ${q.image ? `<img src="${q.image}" style="max-height:250px; margin-top:16px; border-radius:10px; border:1px solid var(--border);">` : ''}
+            
+            <div style="margin-top:16px; background:white; padding:16px; border-radius:8px; border:1px solid var(--border);">
+                ${q.options.map((o,j)=>
+                    `<div style="display:flex; align-items:center; margin-bottom:10px;">
+                        <input type="radio" name="correct_${i}" ${j===q.correct?'checked':''} onchange="draftQuestions[${i}].correct=${j}" style="cursor:pointer; width:18px; height:18px;">
+                        <strong style="margin:0 12px; font-size:1.1rem; color:var(--ink3);">${LETTERS[j]})</strong>
+                        <input type="text" class="field" style="flex:1; margin:0; padding:8px;" value="${(o || '').replace(/"/g, '&quot;')}" placeholder="Şık metni" onchange="draftQuestions[${i}].options[${j}]=this.value">
+                    </div>`
+                ).join('')}
+            </div>
+            
+            <div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; justify-content:flex-end;">
+                <button class="btn btn-ai btn-sm" onclick="saveToBank(${i})">💾 Soruyu Havuza At</button>
+                <label class="btn btn-secondary btn-sm" style="cursor:pointer;">📷 Fotoğraf Ekle <input type="file" style="display:none;" accept="image/*" onchange="uploadQImage(this, ${i})"></label>
+                <button class="btn btn-danger btn-sm" onclick="removeDraftQ(${i})">Soruyu Sil</button>
+            </div>
+        </div>`
+    ).join(''); 
+}
+
 function removeDraftQ(i){ draftQuestions.splice(i,1); renderDraftQ(); }
 async function saveQuiz(){ const name=document.getElementById('new-quiz-name').value.trim(); const timeLimit=parseInt(document.getElementById('new-quiz-time').value) || 0; if(!name || draftQuestions.length===0){ showToast('⚠️ Hata.'); return; } showLoader('Kaydediliyor...'); try{ await sbFetch('quizzes', {method:'POST', body:JSON.stringify({class_id:activeClassId, branch:activeBranch, name, questions:draftQuestions, teacher_name: currentTeacher.name, time_limit: timeLimit, institution_id: currentInstitution.id})}); switchTab('quizzes'); showToast('🎉 Kaydedildi!'); } catch(e){} finally{ hideLoader(); } }
 
