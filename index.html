@@ -1258,28 +1258,41 @@ async function processCsvData(csvText, examName) {
     }
 }
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
-async function callGeminiAI(prompt) {
-    // Şifreyi güvenli birleştirdik
+// --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
+async function callGeminiAI(prompt, retries = 3) {
     const apiKey = 'AIzaSy' + 'BOvmLNACzwU4xRrJbNnNdyhagNpCcTcB4'; 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-        if (!response.ok) throw new Error("API yanıt vermedi! Durum Kodu: " + response.status);
+            // Eğer yoğunluk (429) hatası alırsak bekle ve tekrar dene
+            if (response.status === 429) {
+                const waitTime = (i + 1) * 3000; // İlkinde 3 sn, ikincide 6 sn bekle
+                console.warn(`⏳ Sistem yoğun. ${waitTime/1000} saniye bekleniyor... (Deneme: ${i+1})`);
+                await new Promise(res => setTimeout(res, waitTime));
+                continue; // Döngünün başına dön ve tekrar istek at
+            }
 
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text; 
-        
-    } catch (error) {
-        console.error("API Bağlantı Hatası:", error);
-        return "⚠️ Yapay zeka ile bağlantı kurulamadı. Lütfen tekrar deneyin.";
+            if (!response.ok) throw new Error("API yanıt vermedi! Durum Kodu: " + response.status);
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text; 
+            
+        } catch (error) {
+            console.error("API Bağlantı Hatası:", error);
+            // Eğer son denemede de hata verdiyse profesyonel bir mesaj göster
+            if (i === retries - 1) {
+                return "⚠️ Şu an sistemimizde yoğunluk yaşanmaktadır (Sınıftaki diğer arkadaşlarınız da şu an rapor alıyor). Lütfen 1 dakika bekleyip butona tekrar tıklayınız. Anlayışınız için teşekkürler.";
+            }
+        }
     }
 }
   // --- KAYBOLAN SINAV SONUÇLARI MOTORU ---
