@@ -138,6 +138,38 @@ table tr {
 table tr:hover {
     background-color: #f8fafc; /* Hafif satır vurgusu */
 }
+  /* --- V3.1 MOBİL KURTARMA VE UX OPTİMİZASYON PAKETİ --- */
+  body, html {
+      overflow-x: hidden !important;
+      max-width: 100vw;
+  }
+
+  @media (max-width: 768px) {
+      h1, h2, h3 {
+          font-size: 1.5rem !important;
+          line-height: 1.2 !important;
+          word-wrap: break-word;
+          margin-bottom: 15px !important;
+      }
+      
+      div[style*="display:flex"], div[style*="display: flex"] {
+          flex-wrap: wrap !important;
+      }
+
+      .card .btn, .tab-btn {
+          white-space: normal !important;
+          padding: 10px !important;
+      }
+
+      .card > div[style*="justify-content:space-between"] {
+          flex-direction: column !important;
+          align-items: stretch !important;
+          gap: 10px !important;
+      }
+      
+      .screen { padding: 15px 10px !important; }
+      .card { padding: 15px !important; margin-bottom: 15px !important; }
+  }
 </style>
 </head>
 <body>
