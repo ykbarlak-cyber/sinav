@@ -1392,6 +1392,7 @@ async function processCsvData(csvText, examName) {
 }
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
+// --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
 async function callGeminiAI(prompt, retries = 3) {
     const apiKey = 'AIzaSy' + 'BOvmLNACzwU4xRrJbNnNdyhagNpCcTcB4'; 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -1408,10 +1409,10 @@ async function callGeminiAI(prompt, retries = 3) {
 
             // Eğer yoğunluk (429) hatası alırsak bekle ve tekrar dene
             if (response.status === 429) {
-                const waitTime = (i + 1) * 3000; // İlkinde 3 sn, ikincide 6 sn bekle
+                const waitTime = (i + 1) * 3000; 
                 console.warn(`⏳ Sistem yoğun. ${waitTime/1000} saniye bekleniyor... (Deneme: ${i+1})`);
                 await new Promise(res => setTimeout(res, waitTime));
-                continue; // Döngünün başına dön ve tekrar istek at
+                continue; 
             }
 
             if (!response.ok) throw new Error("API yanıt vermedi! Durum Kodu: " + response.status);
@@ -1421,12 +1422,11 @@ async function callGeminiAI(prompt, retries = 3) {
             
         } catch (error) {
             console.error("API Bağlantı Hatası:", error);
-            // Eğer son denemede de hata verdiyse profesyonel bir mesaj göster
-            if (i === retries - 1) {
-                return "⚠️ Şu an sistemimizde yoğunluk yaşanmaktadır (Sınıftaki diğer arkadaşlarınız da şu an rapor alıyor). Lütfen 1 dakika bekleyip butona tekrar tıklayınız. Anlayışınız için teşekkürler.";
-            }
         }
     }
+    
+    // GÜVENLİK SİBOBU: 3 Deneme de başarısız olursa "undefined" yerine bu havalı mesajı ver:
+    return "⚠️ Google Yapay Zeka sunucuları şu an tam kapasite çalışıyor. Lütfen yaklaşık 1 dakika bekleyip butona tekrar tıklayınız. Anlayışınız için teşekkür ederiz.";
 }
   // --- KAYBOLAN SINAV SONUÇLARI MOTORU ---
 async function viewQuizResults(quizId, quizName) { 
