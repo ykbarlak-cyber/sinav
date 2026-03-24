@@ -313,9 +313,10 @@ async function renderStudentDashboard() {
     </div>
 
     <div class="card" style="border-top: 4px solid var(--correct);">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
-            <h3 style="margin-top:0;">Geçmiş Sınav Sonuçlarım</h3>
-        </div>
+       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+    <h3 style="margin-top:0;">Geçmiş Sınav Sonuçlarım</h3>
+    <button class="btn btn-ai btn-sm" onclick="showExternalExamModal()">📝 Dışarıdan Deneme Ekle</button>
+</div>
         <div id="student-past-results"><div class="spin" style="margin:20px auto"></div></div>
     </div>
   `;
