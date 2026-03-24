@@ -69,6 +69,75 @@
   .sidebar-class-row { margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
   .btn-branch { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
   .btn-branch:hover { background: var(--primary); border-color: var(--primary); }
+/* --- V3.0 VİZYONER CİLA PAKETİ - GÖRSEL MAKYAJ (SADECE YAPISTIR) --- */
+
+:root {
+  /* Premium Palette */
+  --primary: #4f46e5; /* Zengin Indigo Mavi (Eski mavinin yerine) */
+  --primary-hover: #4338ca;
+  --ai-accent: #9333ea; /* Güçlü Mor (AI Özellikleri İçin) */
+  --ai-accent-hover: #7e22ce;
+  --success: #16a34a; /* WhatsApp Yesili */
+  
+  --bg-panel: #f9fafb; /* Çok hafif, modern gri background */
+  --border-card: #e5e7eb; /* Kartların etrafındaki ince çizgi */
+  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Yumusak Gölge */
+}
+
+/* 1. Global Background */
+body {
+    background-color: var(--bg-panel);
+}
+
+/* 2. Kartın Yeniden Tasarımı */
+.card {
+    background: white;
+    padding: 30px;
+    border-radius: 16px; /* Daha yumusak köseler */
+    border: 1px solid var(--border-card);
+    box-shadow: var(--shadow-premium);
+    margin-bottom: 25px;
+}
+
+/* 3. Butonların Modernizasyonu */
+.btn {
+    border-radius: 10px; /* Modern köseler */
+    font-weight: 600;
+    transition: all 0.2s; /* Hafif hover efekti */
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border: none;
+}
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-success {
+    background-color: var(--success);
+    border: none;
+}
+
+/* 4. Otonom AI Vurgusu (Special Button) */
+.btn-ai {
+    background-color: var(--ai-accent) !important;
+    border: none !important;
+    color: white !important;
+    padding: 8px 16px;
+    font-size: 0.95rem;
+}
+.btn-ai:hover {
+    background-color: var(--ai-accent-hover) !important;
+}
+
+/* 5. Tablo Citası */
+table tr {
+    border-bottom: 1px solid #f1f5f9; /* İnce, modern ayrac */
+}
+table tr:hover {
+    background-color: #f8fafc; /* Hafif satır vurgusu */
+}
 </style>
 </head>
 <body>
