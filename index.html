@@ -903,7 +903,7 @@ async function getAIClassReport(quizId, quizName) {
         // 5. ŞIK İNDİRME SİSTEMİ
         showToast('✅ Raporun hazır, indiriliyor...');
         const dosyaIcerigi = `🎓 ${examName} - KİŞİSEL AI KOÇLUK RAPORU 🎓\n\n` + report;
-        const blob = new Blob([dosyaIcerigi], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob(["\uFEFF" + dosyaIcerigi], { type: 'text/plain;charset=utf-8' });
         const indirLink = document.createElement('a');
         indirLink.href = URL.createObjectURL(blob);
        indirLink.download = `${currentStudent ? currentStudent.name : 'Sinif'}_AI_Analizi.txt`;
