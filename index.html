@@ -359,8 +359,25 @@ async function renderStudentDashboard() {
     }
 
     // 2. AKTİF SINAVLARI ÇEK VE ÇÖZÜLENLERİ KİLİTLE
-    const activeQuizzes = await sbFetch(`quizzes?institution_id=eq.${currentInstitution.id}&class_id=eq.${currentStudent.class_id}&is_active=eq.true`);
-    if (activeQuizzes.length === 0) {
+// 2. AKTİF SINAVLARI ÇEK VE ŞUBEYE GÖRE KİLİTLE
+let activeQuizzes = await sbFetch(`quizzes?institution_id=eq.${currentInstitution.id}`);
+
+activeQuizzes = activeQuizzes.filter(q => {
+    // 1. Sınav 'Tümü' veya boş olarak kaydedildiyse herkese göster
+    if (!q.class_id || q.class_id === 'Tümü' || q.class_id === '') return true;
+
+    // 2. Eğer sınav tablosunda 'branch' (şube) sütunu varsa ve doluysa tam eşleşme ara
+    if (q.branch) {
+        return q.class_id === currentStudent.class_id && q.branch === currentStudent.branch;
+    }
+
+    // 3. Eğer öğretmen sınavı kaydederken sınıf adına direkt 'kpss-A' yazdıysa
+    const tamSinifAdi = `${currentStudent.class_id}-${currentStudent.branch}`; 
+    if (q.class_id === tamSinifAdi) return true;
+
+    // 4. Yukarıdakiler tutmazsa sadece 'kpss' eşleşmesine bak (eski kayıtlar için)
+    return q.class_id === currentStudent.class_id;
+});    if (activeQuizzes.length === 0) {
       actDiv.innerHTML = '<div style="color:var(--ink3); padding:10px 0;">Şu an aktif bir sınav bulunmuyor.</div>';
     } else {
       actDiv.innerHTML = activeQuizzes.map(q => {
@@ -378,21 +395,29 @@ async function renderStudentDashboard() {
       `}).join('');
     }
 
-    // 3. LİDERLİK TABLOSU
-    const allClassResults = await sbFetch(`quiz_results?institution_id=eq.${currentInstitution.id}&class_id=eq.${currentStudent.class_id}`);
-    if (allClassResults.length === 0) {
-      leaderDiv.innerHTML = '<div style="color:var(--ink3); font-size:0.9rem;">Henüz sıralama oluşmadı.</div>';
-    } else {
-      const studentTotals = {};
-      allClassResults.forEach(r => {
-        if (!studentTotals[r.student_name]) studentTotals[r.student_name] = 0;
-        studentTotals[r.student_name] += (r.score || 0);
-      });
-      
-      const sortedStudents = Object.keys(studentTotals)
+   // 3. LİDERLİK TABLOSU (ŞUBE KORUMALI)
+// 1- Önce kurumdaki tüm sonuçları çek
+const rawResults = await sbFetch(`quiz_results?institution_id=eq.${currentInstitution.id}`);
+
+// 2- İŞTE BÜYÜK SIR BURADA: Hem class_id (kpss) hem de branch (A veya B) aynı olmalı!
+const classStudents = await sbFetch(`students?institution_id=eq.${currentInstitution.id}&class_id=eq.${currentStudent.class_id}&branch=eq.${currentStudent.branch}`);
+const myClassNames = classStudents.map(s => s.name); // Sadece kendi şubemdeki arkadaşlarım
+
+if (!rawResults || rawResults.length === 0) {
+    leaderDiv.innerHTML = '<div style="color:var(--ink3); font-size:0.9rem;">Henüz sıralama oluşmadı.</div>';
+} else {
+    const studentTotals = {};
+    rawResults.forEach(r => {
+        // 🔐 GİZLİLİK KİLİDİ: Sadece benim şubemde adı olanların puanını topla!
+        if (myClassNames.includes(r.student_name)) {
+            if (!studentTotals[r.student_name]) studentTotals[r.student_name] = 0;
+            studentTotals[r.student_name] += (r.score || 0);
+        }
+    });
+
+    const sortedStudents = Object.keys(studentTotals)
         .map(name => ({ name, score: studentTotals[name] }))
         .sort((a, b) => b.score - a.score);
-
       let leaderHTML = '<table style="width:100%; border-collapse:collapse; font-size:0.95rem;">';
       sortedStudents.slice(0, 5).forEach((stu, index) => {
         let medal = '🔹';
