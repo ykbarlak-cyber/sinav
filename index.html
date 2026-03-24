@@ -311,7 +311,7 @@ table tr:hover {
 // ═══════════════════════════════════════════════
 const SUPABASE_URL = "https://uwjanizsyhihlenywqbo.supabase.co"; 
 const SUPABASE_KEY = "sb_publishable_1X-nEOI-GBvyisJMbrmHpw_ANXxGafx"; 
-const GEMINI_API_KEY = "AIzaSyBOvmLNACzw" + "U4xRrJbNnNdyhagNpCcTcB4"; 
+const GEMINI_API_KEY = "AIzaSyDZUP2DtSqo" + "R5k0WTjLhwOAFGVMJSwbNHU"; 
 
 const CLASS_DEFS = [ {id:'6', label:'6. Sınıf', icon:'📗'}, {id:'7', label:'7. Sınıf', icon:'📘'}, {id:'8', label:'8. Sınıf', icon:'📙'}, {id:'9', label:'9. Sınıf', icon:'📕'}, {id:'10', label:'10. Sınıf', icon:'📓'}, {id:'11', label:'11. Sınıf', icon:'📒'}, {id:'12', label:'12. Sınıf', icon:'📔'}, {id:'mezEA', label:'Mezun — EA', icon:'🎓'}, {id:'mezSAY', label:'Mezun — SAY', icon:'🎓'}, {id:'kpss', label:'KPSS', icon:'🏛'} ];
 const BRANCHES = ['A','B','C']; const LETTERS  = ['A','B','C','D','E'];
@@ -966,7 +966,7 @@ async function askAI(qIndex) {
 
     try { 
         // Şifreyi güvenli birleştirdik
-        const apiKey = 'AIzaSy' + 'BOvmLNACzwU4xRrJbNnNdyhagNpCcTcB4'; 
+        const apiKey = 'AIzaSy' + 'DZUP2DtSqoR5k0WTjLhwOAFGVMJSwbNHU'; 
         
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { 
             method: 'POST', 
@@ -1394,7 +1394,7 @@ async function processCsvData(csvText, examName) {
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
 async function callGeminiAI(prompt, retries = 3) {
-    const apiKey = 'AIzaSy' + 'BOvmLNACzwU4xRrJbNnNdyhagNpCcTcB4'; 
+    const apiKey = 'AIzaSy' + 'DZUP2DtSqoR5k0WTjLhwOAFGVMJSwbNHU'; 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     for (let i = 0; i < retries; i++) {
