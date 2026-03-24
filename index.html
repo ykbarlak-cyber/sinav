@@ -792,8 +792,39 @@ let currentQuiz=null, quizAnswers={}, currentQIdx=0; let timerInterval = null, t
 function prepareStudentQuiz(quizId){ currentQuiz = JSON.parse(JSON.stringify(window._quizMap[quizId])); quizAnswers={}; currentQIdx=0; showLoader('Hazırlanıyor...'); currentQuiz.questions.forEach(q => { let optsWithIndex = q.options.map((opt, idx) => ({text: opt, isCorrect: (idx === q.correct)})); shuffleArray(optsWithIndex); q.options = optsWithIndex.map(o => o.text); q.correct = optsWithIndex.findIndex(o => o.isCorrect); }); shuffleArray(currentQuiz.questions); setTimeout(() => { hideLoader(); showScreen('s-quiz'); if (currentQuiz.time_limit && currentQuiz.time_limit > 0) { timeRemaining = currentQuiz.time_limit * 60; document.getElementById('q-timer').style.display = 'block'; updateTimerDisplay(); timerInterval = setInterval(() => { timeRemaining--; updateTimerDisplay(); if (timeRemaining <= 0) { clearInterval(timerInterval); showToast("⏳ Süre doldu!"); finishQuiz(true); } }, 1000); } else { document.getElementById('q-timer').style.display = 'none'; } renderQCard(); }, 800); }
 function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
 function updateTimerDisplay() { const m = Math.floor(timeRemaining / 60).toString().padStart(2, '0'); const s = (timeRemaining % 60).toString().padStart(2, '0'); document.getElementById('q-timer').textContent = `⏳ ${m}:${s}`; }
-function renderQCard(){ const q=currentQuiz.questions[currentQIdx]; document.getElementById('q-ctr').textContent = `Soru: ${currentQIdx+1} / ${currentQuiz.questions.length}`; document.getElementById('q-card-area').innerHTML= `<div class="card" style="box-shadow:none; border:2px solid var(--border);"><div style="font-size:1.2rem; font-weight:500; margin-bottom:20px;">${q.text}</div>${q.image ? `<img src="${q.image}" style="max-width:100%; max-height:400px; border-radius:12px; margin-bottom:24px;">` : ''}<div>${q.options.map((opt,i)=> `<div class="option-row ${quizAnswers[currentQIdx]===i?'sel':''}" onclick="pickAnswer(${i})"><strong>${LETTERS[i]}</strong> <span style="margin-left:8px">${opt}</span></div>`).join('')}</div></div>`; document.getElementById('q-prev').disabled = currentQIdx===0; const nb=document.getElementById('q-next'); if(currentQIdx === currentQuiz.questions.length-1){ nb.textContent='Sınavı Bitir ✓'; nb.className='btn btn-excel'; nb.onclick=()=>finishQuiz(false); } else { nb.textContent='Sonraki Soru →'; nb.className='btn btn-primary'; nb.onclick=()=>qNav(1); } }
-function pickAnswer(i){ quizAnswers[currentQIdx]=i; renderQCard(); } function qNav(dir){ currentQIdx+=dir; renderQCard(); }
+// --- V3.0 YAN YANA ŞIK TASARIMI (FLEXBOX UX) ---
+function renderQCard() { 
+    const q = currentQuiz.questions[currentQIdx]; 
+    document.getElementById('q-ctr').textContent = `Soru: ${currentQIdx + 1} / ${currentQuiz.questions.length}`; 
+    
+    document.getElementById('q-card-area').innerHTML = `
+        <div class="card" style="box-shadow:none; border:2px solid var(--border);">
+            <div style="font-size:1.2rem; font-weight:500; margin-bottom:20px;">${q.text}</div>
+            ${q.image ? `<img src="${q.image}" style="max-width:100%; max-height:400px; border-radius:12px; margin-bottom:24px;">` : ''}
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 10px;">
+                ${q.options.map((opt, i) => `
+                    <div class="option-row ${quizAnswers[currentQIdx] === i ? 'sel' : ''}" onclick="pickAnswer(${i})" style="flex: 1 1 calc(20% - 10px); min-width: 60px; text-align: center; padding: 12px 5px; margin: 0; display: flex; justify-content: center; align-items: center; border-radius: 10px;">
+                        <strong style="font-size: 1.1rem; color: var(--primary);">${LETTERS[i]}</strong> 
+                        <span style="margin-left:6px; font-size: 0.95rem;">${opt}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`; 
+        
+    document.getElementById('q-prev').disabled = currentQIdx === 0; 
+    const nb = document.getElementById('q-next'); 
+    
+    if (currentQIdx === currentQuiz.questions.length - 1) { 
+        nb.textContent = 'Sınavı Bitir ✓'; 
+        nb.className = 'btn btn-excel'; 
+        nb.onclick = () => finishQuiz(false); 
+    } else { 
+        nb.textContent = 'Sonraki Soru →'; 
+        nb.className = 'btn btn-primary'; 
+        nb.onclick = () => qNav(1); 
+    } 
+}function pickAnswer(i){ quizAnswers[currentQIdx]=i; renderQCard(); } function qNav(dir){ currentQIdx+=dir; renderQCard(); }
 async function finishQuiz(isTimeUp = false) { 
     const blank = currentQuiz.questions.length - Object.keys(quizAnswers).length; 
     if(!isTimeUp && blank > 0 && !confirm(`⚠️ ${blank} boş var. Bitirilsin mi?`)) return; 
