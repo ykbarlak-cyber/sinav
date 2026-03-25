@@ -1160,6 +1160,33 @@ async function changeMyPassword() {
     currentQIdx = 0;
     showScreen('s-quiz');
     renderQCard();
+    // --- V3.4 CANLI KRONOMETRE MOTORU (BAŞLANGIÇ) ---
+    window.quizSeconds = 0;
+    if(window.quizInterval) clearInterval(window.quizInterval);
+    
+    // Ekrana yapışkan şık sayacı ekle
+    let timerEl = document.getElementById('live-timer');
+    if(!timerEl) {
+        timerEl = document.createElement('div');
+        timerEl.id = 'live-timer';
+        // Sağ üstte her zaman duran şık bir mor kapsül tasarımı
+        timerEl.style.cssText = "position:fixed; top:15px; right:15px; background:var(--primary-color, #4f46e5); color:white; padding:8px 16px; border-radius:20px; font-weight:bold; z-index:9999; box-shadow:0 4px 6px rgba(0,0,0,0.3); font-size:16px; transition: all 0.3s ease;";
+        document.body.appendChild(timerEl);
+    }
+    timerEl.style.display = 'block';
+    timerEl.innerText = "⏱️ 00:00";
+
+    // Her saniye tıkla ve ekrana yaz
+    window.quizInterval = setInterval(() => {
+        window.quizSeconds++;
+        const m = String(Math.floor(window.quizSeconds / 60)).padStart(2, '0');
+        const s = String(window.quizSeconds % 60).padStart(2, '0');
+        timerEl.innerText = `⏱️ ${m}:${s}`;
+        
+        // Bonus: Sınav 60 dakikayı geçerse sayaç kızarsın (Uyarı)
+        if(window.quizSeconds > 3600) timerEl.style.background = "#e11d48"; 
+    }, 1000);
+    // ------------------------------------------------
     if (currentQuiz.time_limit) {
       timeRemaining = currentQuiz.time_limit * 60;
       startTimer();
