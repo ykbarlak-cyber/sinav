@@ -1026,16 +1026,20 @@ async function getAIClassReport(quizId, quizName) {
             `ÖĞRENCİ: ${r.student_name} | DOĞRU: ${r.correct} | YANLIŞ: ${r.wrong} | NET: ${r.net || (r.correct - (r.wrong/4))}`
         ).join('\n');
         
-        const prompt = `
-            Sen profesyonel bir eğitim koçusun. Sadece şu veriye göre analiz yap:
-            ${studentStats}
-            
-            KURALLAR:
-            1. Sadece yukarıda adı geçen öğrenciye özel koçluk yap. Diğer öğrencilerden bahsetme.
-            2. Doğru ve Yanlış sayılarını ASLA karıştırma. (Örn: 3 Doğru varsa 3 Doğru de).
-            3. "Veri eksik" deme, elindeki sayılarla motive edici bir strateji yaz.
-            4. Analizi asla yarıda kesme, tam bir rapor sun.
-        `;
+       const prompt = `Sen uzman, disiplinli ve sonuç odaklı bir Eğitim Koçu ve Veri Analistisin. Aşağıda bir sınıfın deneme sınavı sonuçlarının TÜM HAM VERİSİ bulunuyor. Bu verinin içinde soruların konuları ve işaretlenen şıklar gizli.
+
+Senden istediğim şey yuvarlak, genel geçer ve sadece motivasyon içeren klişe cümleler KURMAMANDIR. Tamamen veriye, mantığa ve akademik eksiklere odaklan!
+
+DİKKAT KESİN KURAL: Veride öğrencinin verdiği bir cevap rakam veya harf olarak bulunuyorsa, öğrenci soruyu ASLA BOŞ BIRAKMAMIŞTIR! Öğrenciye sakın "boş bırakmışsın" deme! Öğrencinin yanlış yaptığı konuları ham veriden çekerek nokta atışı söyle.
+
+Her öğrenci için şu formatta net bir analiz raporu çıkar:
+1. NET DURUMU: (Örn: 3 Doğru, 2 Yanlış.)
+2. KONU ANALİZİ: Hangi konularda (sorularda) hata yapılmış? (Açıkça belirt).
+3. HATA TEŞHİSİ: Yanlışın sebebi sence Bilgi Eksikliği mi, Dikkatsizlik mi?
+4. AKSİYON PLANI: Bu hafta netini artırmak için hangi konuya çalışmalı?
+
+İşte Sınıfın Sınav Verisi:
+${JSON.stringify(filteredResults, null, 2)}`;
 
         const report = await callGeminiAI(prompt); 
         hideLoader();
