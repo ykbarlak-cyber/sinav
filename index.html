@@ -843,13 +843,30 @@ function renderQCard() {
             ${q.image ? `<img src="${q.image}" style="max-width:100%; max-height:400px; border-radius:12px; margin-bottom:24px;">` : ''}
             
             <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 10px;">
-                ${q.options.map((opt, i) => `
-                    <div class="option-row ${quizAnswers[currentQIdx] === i ? 'sel' : ''}" onclick="pickAnswer(${i})" style="flex: 1 1 calc(20% - 10px); min-width: 60px; text-align: center; padding: 12px 5px; margin: 0; display: flex; justify-content: center; align-items: center; border-radius: 10px;">
-                        <strong style="font-size: 1.1rem; color: var(--primary);">${LETTERS[i]}</strong> 
-                        <span style="margin-left:6px; font-size: 0.95rem;">${opt}</span>
-                    </div>
-                `).join('')}
+               ${q.options.map((opt, i) => {
+            let incelemeStili = "";
+            let secimClass = (!window.isReviewMode && quizAnswers[currentQIdx] === i) ? 'sel' : '';
+            
+            if (window.isReviewMode) {
+                if (i === q.correct) {
+                    // Doğru cevap Yemyeşil parlasın
+                    incelemeStili = "background-color: #dcfce7 !important; border: 2px solid #22c55e !important; color: #15803d !important;";
+                } else if (i === quizAnswers[currentQIdx]) {
+                    // Öğrenci yanlış yaptıysa o şık Kıpkırmızı olsun
+                    incelemeStili = "background-color: #fee2e2 !important; border: 2px solid #ef4444 !important; color: #b91c1c !important;";
+                } else {
+                    // Diğer şıklar soluklaşsın
+                    incelemeStili = "opacity: 0.5; cursor: not-allowed;";
+                }
+            }
+            
+            return `
+            <div class="option-row ${secimClass}" onclick="pickAnswer(${i})" style="${incelemeStili}">
+                <strong style="font-size: 1.1rem; color: var(--primary); margin-right:10px;">${['A','B','C','D','E'][i]}</strong>
+                <span style="font-size: 0.95rem;">${opt}</span>
             </div>
+            `;
+        }).join('')}
         </div>`; 
         
     document.getElementById('q-prev').disabled = currentQIdx === 0; 
@@ -864,8 +881,7 @@ function renderQCard() {
         nb.className = 'btn btn-primary'; 
         nb.onclick = () => qNav(1); 
     } 
-}function pickAnswer(i){ quizAnswers[currentQIdx]=i; renderQCard(); } function qNav(dir){ currentQIdx+=dir; renderQCard(); }
-async function finishQuiz(isTimeUp = false) { 
+} function pickAnswer(i){ if(window.isReviewMode) return; quizAnswers[currentQIdx]=i; renderQCard(); }async function finishQuiz(isTimeUp = false) { 
     const blank = currentQuiz.questions.length - Object.keys(quizAnswers).length; 
     if(!isTimeUp && blank > 0 && !confirm(`⚠️ ${blank} boş var. Bitirilsin mi?`)) return; 
     
@@ -1592,6 +1608,33 @@ async function handleBulkQuestions(input) {
     hideLoader();
     alert(`🎯 SIKIŞTIRMA BAŞARILI!\n\n${files.length} adet soru devasa boyutlardan küçültülerek sisteme eklendi. Sınavın boyutu %95 oranında küçüldü, artık çökmeler yaşanmayacak!`);
 }
+  // --- V3.5 SINAVI İNCELE MODU MOTORU ---
+window.isReviewMode = false; // Sistem ilk açıldığında kapalı dursun
+
+function startReviewMode() {
+    window.isReviewMode = true; // İnceleme modunu ateşle
+    currentQIdx = 0; // Öğrenciyi 1. soruya ışınla
+    
+    // Sonuç ekranını kapat, sınav ekranını okuma modunda geri aç
+    showScreen('s-quiz');
+    
+    // Köşedeki kronometreyi incelemede gizle (kafa karıştırmasın)
+    const timerEl = document.getElementById('live-timer');
+    if(timerEl) timerEl.style.display = 'none';
+    
+    renderQCard(); // Soruları renkli renkli çiz!
+}
+
+// İnceleme bitince "Sınavı Bitir" butonuna basılırsa sonuçlara geri dön
+const oldFinishQuiz = finishQuiz;
+finishQuiz = async function(isTimeUp = false) {
+    if(window.isReviewMode) {
+        window.isReviewMode = false; // Modu kapat
+        showScreen('s-result'); // Tebrikler ekranına geri dön
+        return;
+    }
+    await oldFinishQuiz(isTimeUp);
+};
 </script>
 </body>
 </html>
