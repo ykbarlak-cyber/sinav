@@ -425,6 +425,9 @@ async function renderStudentDashboard() {
        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
     <h3 style="margin-top:0;">Geçmiş Sınav Sonuçlarım</h3>
     </div>
+    <div style="width: 100%; max-height: 250px; margin-bottom: 20px; padding: 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <canvas id="studentProgressChart"></canvas>
+    </div>
         <div id="student-past-results"><div class="spin" style="margin:20px auto"></div></div>
     </div>
   `;
@@ -466,7 +469,49 @@ async function renderStudentDashboard() {
         `).join('')}
       </table>`;
     }
+// --- V4.0 ÖĞRENCİ GELİŞİM GRAFİĞİ ÇİZİM MOTORU ---
+        setTimeout(() => {
+            const ctx = document.getElementById('studentProgressChart');
+            if (ctx && pastResults && pastResults.length > 0) {
+                // Verileri eski tarihten yeniye doğru sırala (Grafik soldan sağa tırmansın)
+                const sortedResults = [...pastResults].reverse();
+                const labels = sortedResults.map(r => r.quiz_title || 'Deneme');
+                const scores = sortedResults.map(r => r.score);
 
+                // Eski grafik varsa sil ki üst üste binmesin
+                if (window.studentChartInstance) window.studentChartInstance.destroy();
+
+                window.studentChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Sınav Puanı',
+                            data: scores,
+                            borderColor: '#4f46e5', // Kurumsal Mor Rengimiz
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderColor: '#4f46e5',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            fill: true,
+                            tension: 0.4 // Çizgilere yumuşak ve şık bir kavis verir
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, max: 100 } },
+                        plugins: { legend: { display: false } } // Gereksiz yazıları gizle
+                    }
+                });
+            } else if (ctx) {
+                // Eğer öğrencinin hiç sınavı yoksa o beyaz tuvali gizle (boş durmasın)
+                ctx.parentElement.style.display = 'none';
+            }
+        }, 100); 
+        // ------------------------------------------------
     // 2. AKTİF SINAVLARI ÇEK VE ÇÖZÜLENLERİ KİLİTLE
 // 2. AKTİF SINAVLARI ÇEK VE ŞUBEYE GÖRE KİLİTLE
 let activeQuizzes = await sbFetch(`quizzes?institution_id=eq.${currentInstitution.id}`);
