@@ -170,6 +170,13 @@ table tr:hover {
       .screen { padding: 15px 10px !important; }
       .card { padding: 15px !important; margin-bottom: 15px !important; }
   }
+  /* --- V3.2 SORU FOTOĞRAFLARI KIRPILMAYI ÖNLEYİCİ --- */
+  .card img, div[style*="max-height"] img, img[style*="max-height"] {
+      object-fit: contain !important; /* Asla kırpma, sığdır! */
+      max-height: 600px !important; /* Uzun sorular için alanı genişlettik */
+      width: 100% !important; /* Ekrana tam oturt */
+      border-radius: 8px;
+  }
 </style>
 </head>
 <body>
