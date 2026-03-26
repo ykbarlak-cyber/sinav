@@ -1910,6 +1910,66 @@ function clearMistakes() {
     }
 }
 // ------------------------------------------
+// =========================================================================
+// --- V4.0 SON VURUŞ: SORU BAŞINA ZAMAN ENSESİ (KRONOMETRE KANCASI) ---
+// =========================================================================
+
+window.questionTimes = []; // Her sorunun saniyesi bu gizli kasada tutulacak
+let activeQuestionTimer = null;
+
+// 1. KANCA: Soru ekrana her çizildiğinde (renderQCard) saniyeyi saymaya başla!
+if(typeof renderQCard === "function") {
+    const orjinalRender = renderQCard; // Senin orijinal kodunu yedekliyoruz
+    
+    renderQCard = function() {
+        // Eski sorunun sayacını durdur
+        clearInterval(activeQuestionTimer);
+        
+        // Eğer dizi boşsa sıfırdan başlat
+        if(!window.questionTimes[currentQIdx]) window.questionTimes[currentQIdx] = 0;
+        
+        // Eğer sınavı çözüyorsak (inceleme modunda değilsek) saniyeleri say!
+        if(!window.isReviewMode) {
+            activeQuestionTimer = setInterval(() => {
+                window.questionTimes[currentQIdx]++;
+            }, 1000); // Her 1 saniyede 1 artır
+        }
+        
+        // Senin orijinal soru çizme kodunu çalıştır (Sistem hiçbir şey anlamayacak)
+        orjinalRender.apply(this, arguments);
+
+        // 🚨 VURUCU NOKTA: Eğer öğrenci sınavı bitirmiş ve "SINAVI İNCELE" moduna geçmişse...
+        if(window.isReviewMode && window.questionTimes[currentQIdx] !== undefined) {
+            const sure = window.questionTimes[currentQIdx];
+            const dk = Math.floor(sure / 60);
+            const sn = sure % 60;
+            const sureMetni = dk > 0 ? `${dk} dk ${sn} sn` : `${sn} sn`;
+            
+            // Süreye göre renk ver: 1 dakikadan azsa Yeşil, 1-2 dk arası Sarı, 2 dakikadan fazlaysa Kırmızı!
+            let renk = sure >= 120 ? "#ef4444" : (sure >= 60 ? "#f59e0b" : "#22c55e"); 
+            let uyari = sure >= 120 ? " ⚠️ ÇOK YAVAŞ!" : (sure >= 60 ? " ⚡ DİKKAT ET" : " 🚀 HIZLI");
+
+            // Sorunun en tepesine utanç/gurur tablosunu (rozeti) yapıştır!
+            const qContainer = document.querySelector('#s-quiz .card');
+            if(qContainer) {
+                const badge = document.createElement('div');
+                badge.innerHTML = `<span style="font-size:1.2rem;">⏱️</span> Bu soruda harcanan zaman: <b style="color:${renk}; font-size:1.1rem;">${sureMetni}</b> <span style="font-size:0.8rem; color:${renk}; font-weight:bold; background:${renk}20; padding:2px 6px; border-radius:4px;">${uyari}</span>`;
+                badge.style.cssText = "text-align:right; font-size:0.9rem; margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #cbd5e1; color:#64748b; font-weight:500;";
+                qContainer.insertBefore(badge, qContainer.firstChild);
+            }
+        }
+    };
+}
+
+// 2. KANCA: Sınav bittiğinde sayacı tamamen durdur ki sonsuza kadar saymasın!
+if(typeof finishQuiz === "function") {
+    const orjinalFinish = finishQuiz;
+    finishQuiz = async function(isTimeUp) {
+        clearInterval(activeQuestionTimer);
+        await orjinalFinish.apply(this, arguments);
+    };
+}
+// =========================================================================
 </script>
 </body>
 </html>
