@@ -468,6 +468,9 @@ async function renderStudentDashboard() {
     <div style="width: 100%; max-height: 250px; margin-bottom: 20px; padding: 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
         <canvas id="studentProgressChart"></canvas>
     </div>
+    <div id="radar-container" style="width: 100%; max-height: 300px; margin-bottom: 20px; padding: 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; display: none; justify-content: center;">
+        <canvas id="studentRadarChart"></canvas>
+    </div>
         <div id="student-past-results"><div class="spin" style="margin:20px auto"></div></div>
     </div>
   `;
@@ -550,6 +553,55 @@ async function renderStudentDashboard() {
                 // Eğer öğrencinin hiç sınavı yoksa o beyaz tuvali gizle (boş durmasın)
                 ctx.parentElement.style.display = 'none';
             }
+          // --- V4.0 RADAR GRAFİĞİ MOTORU EKLENTİSİ ---
+                const ctxRadar = document.getElementById('studentRadarChart');
+                if (ctxRadar && pastResults.length >= 3) {
+                    // Sınav isimlerine göre puanları grupla ve ortalamalarını al
+                    const radarData = {};
+                    pastResults.forEach(r => {
+                        let title = r.quiz_title || 'Genel Deneme';
+                        if(title.length > 15) title = title.substring(0,15) + '...'; // İsim uzunsa kısalt
+                        if(!radarData[title]) radarData[title] = [];
+                        radarData[title].push(r.score);
+                    });
+                    
+                    const radarLabels = Object.keys(radarData);
+                    // Sadece 3 veya daha fazla farklı sınav türü varsa ağı ör!
+                    if(radarLabels.length >= 3) {
+                        document.getElementById('radar-container').style.display = 'flex'; // Tuvali görünür yap
+                        
+                        const radarScores = radarLabels.map(label => {
+                            const scores = radarData[label];
+                            return scores.reduce((a,b) => a+b, 0) / scores.length; // Ortalamayı bul
+                        });
+
+                        if (window.studentRadarInstance) window.studentRadarInstance.destroy();
+
+                        window.studentRadarInstance = new Chart(ctxRadar, {
+                            type: 'radar',
+                            data: {
+                                labels: radarLabels,
+                                datasets: [{
+                                    label: 'Başarı Radarı',
+                                    data: radarScores,
+                                    backgroundColor: 'rgba(239, 68, 68, 0.2)', // Agresif Kırmızı Ağ
+                                    borderColor: '#ef4444',
+                                    pointBackgroundColor: '#ef4444',
+                                    pointBorderColor: '#fff',
+                                    pointHoverBackgroundColor: '#fff',
+                                    pointHoverBorderColor: '#ef4444'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: { r: { angleLines: { color: 'rgba(0, 0, 0, 0.1)' }, suggestedMin: 0, suggestedMax: 100 } },
+                                plugins: { legend: { display: false } }
+                            }
+                        });
+                    }
+                }
+                // ------------------------------------------
         }, 100); 
         // ------------------------------------------------
     // 2. AKTİF SINAVLARI ÇEK VE ÇÖZÜLENLERİ KİLİTLE
