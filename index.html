@@ -206,6 +206,32 @@ table tr:hover {
       width: 100% !important; /* Ekrana tam oturt */
       border-radius: 8px;
   }
+  /* --- V4.0 GECE MESAİSİ (DARK MODE) MAKYAJI --- */
+  body.dark-mode {
+      background-color: #0f172a !important; /* Koyu Lacivert/Siyah arka plan */
+      color: #e2e8f0 !important; /* Açık gri yazılar */
+  }
+  body.dark-mode .screen, 
+  body.dark-mode .card,
+  body.dark-mode #radar-container,
+  body.dark-mode div[style*="background: white"],
+  body.dark-mode div[style*="background: #f8fafc"] {
+      background-color: #1e293b !important; /* Kartların ve tuvalin koyu rengi */
+      border-color: #334155 !important;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
+      color: #f8fafc !important;
+  }
+  body.dark-mode h1, body.dark-mode h2, body.dark-mode h3 {
+      color: #38bdf8 !important; /* Başlıklar neon mavi parlasın */
+  }
+  body.dark-mode th, body.dark-mode td {
+      border-color: #334155 !important;
+      color: #cbd5e1 !important;
+  }
+  body.dark-mode .nav-bar {
+      background-color: #0f172a !important;
+      border-bottom: 1px solid #334155 !important;
+  }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
