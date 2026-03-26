@@ -683,15 +683,21 @@ activeQuizzes = activeQuizzes.filter(q => {
         // Bu sınavın ID'si, çocuğun çözdükleri listesinde var mı?
         const isCompleted = completedQuizIds.includes(q.id);
         
-        return `
-        <div style="padding:12px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-          <div><strong>${q.name}</strong> <span style="color:var(--ink3); font-size:0.9rem; margin-left:10px;">(${q.questions ? q.questions.length : 0} Soru)</span></div>
-          ${isCompleted 
-            ? `<button class="btn btn-secondary btn-sm" disabled>✅ Çözüldü</button>` 
-            : `<button class="btn btn-primary btn-sm" onclick="startQuiz('${q.id}')">Sınava Başla</button>`
-          }
-        </div>
-      `}).join('');
+       return `
+            <div style="padding:15px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <strong style="font-size:1.1rem; color:#1e293b;">${q.name}</strong> 
+                    <div>
+                        <span style="background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold; border:1px solid #bae6fd;">⏱️ ${q.time_limit || 60} Dakika</span>
+                    </div>
+                </div>
+                ${isCompleted
+                    ? `<button class="btn btn-secondary btn-sm" disabled style="background:#cbd5e1; color:#475569; border:none;">☑ Çözüldü</button>`
+                    : `<button class="btn btn-primary btn-sm" onclick="startQuiz('${q.id}')" style="box-shadow:0 4px 6px -1px rgba(56, 189, 248, 0.4);">🚀 Sınava Başla</button>`
+                }
+            </div>
+            `
+            }).join('');
     }
 
    // 3. LİDERLİK TABLOSU (ŞUBE KORUMALI)
