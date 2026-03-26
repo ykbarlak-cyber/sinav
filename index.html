@@ -1766,11 +1766,12 @@ async function viewQuizResults(quizId, quizName) {
             </div>
             <div style="overflow-x:auto;">
                 <table>
-                    <tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Özel Veli Mesajı</th><th>AI Koçluk</th></tr>
-                     const msg = `Sayın Velimiz, öğrenciniz ${r.student_name} bugünkü "${quizName}" sınavında ${r.correct} Doğru, ${r.wrong} Yanlış, ${r.blank} Boş ile ${parseFloat(r.net).toFixed(2)} Net yapmıştır.`;
-const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-                     return `<tr><td><strong style="color:var(--ink3);">${i + 1}</strong></td><td><strong>${r.student_name}</strong></td><td>${r.student_number}</td><td style="color:var(--correct); font-weight:bold;">${r.correct}</td><td style="color:var(--wrong); font-weight:bold;">${r.wrong}</td><td>${r.blank}</td><td><strong style="color:var(--primary); font-size:1.1rem; background:#e0e7ff; padding:4px 8px; border-radius:6px;">${parseFloat(r.net).toFixed(2)}</strong></td><td><button class="btn btn-sm" style="background:#10b981; color:white; border:none; border-radius:6px;" onclick="window.open('${waLink}', '_blank')">💬 Gönder</button></td><td><button class="btn btn-sm" style="background:#8b5cf6; color:white; padding:4px 10px; border-radius:6px; border:none; font-weight:bold; box-shadow:0 0 10px rgba(139,92,246,0.4);" onclick="getTeacherAIReport('${r.student_name}', ${r.correct}, ${r.wrong}, ${r.blank}, '${quizName}')">🤖 AI Raporu Al</button></td></tr>`;
-    }).join('')}
+                <tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Özel Veli Mesajı</th><th>AI Koçluk</th></tr>
+            ${results.map((r, i) => {
+                const msg = `Sayın Velimiz, öğrenciniz ${r.student_name} bugünkü "${quizName}" sınavında ${r.correct} Doğru, ${r.wrong} Yanlış, ${r.blank} Boş ile ${parseFloat(r.net).toFixed(2)} Net yapmıştır.`;
+                const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                return `<tr><td><strong style="color:var(--ink3);">${i + 1}</strong></td><td><strong>${r.student_name}</strong></td><td>${r.student_number}</td><td style="color:var(--correct); font-weight:bold;">${r.correct}</td><td style="color:var(--wrong); font-weight:bold;">${r.wrong}</td><td>${r.blank}</td><td><strong style="color:var(--primary); font-size:1.1rem; background:#e0e7ff; padding:4px 8px; border-radius:6px;">${parseFloat(r.net).toFixed(2)}</strong></td><td><button class="btn btn-sm" style="background:#10b981; color:white; border:none; border-radius:6px;" onclick="window.open('${waLink}', '_blank')">💬 Gönder</button></td><td><button class="btn btn-sm" style="background:#8b5cf6; color:white; padding:4px 10px; border-radius:6px; border:none; font-weight:bold; box-shadow:0 0 10px rgba(139,92,246,0.4);" onclick="getTeacherAIReport('${r.student_name}', ${r.correct}, ${r.wrong}, ${r.blank}, '${quizName}')">🤖 AI Raporu Al</button></td></tr>`;
+            }).join('')}
         </table>
             </div>
         </div>`; 
