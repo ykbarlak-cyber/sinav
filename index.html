@@ -236,7 +236,41 @@ table tr:hover {
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+<button id="darkModeToggle" onclick="toggleDarkMode()" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: #1e293b; color: #fbbf24; border: 2px solid #475569; border-radius: 50%; width: 55px; height: 55px; font-size: 1.6rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">🌙</button>
 
+    <script>
+        // SİSTEM HAFIZASI: Sayfa açıldığında öğrencinin dünkü tercihini hatırla!
+        if(localStorage.getItem('geceMesaisi') === 'aktif') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('darkModeToggle').innerText = '☀️';
+            document.getElementById('darkModeToggle').style.background = '#f8fafc';
+        }
+
+        function toggleDarkMode() {
+            const body = document.body;
+            const btn = document.getElementById('darkModeToggle');
+            body.classList.toggle('dark-mode');
+            
+            if(body.classList.contains('dark-mode')) {
+                localStorage.setItem('geceMesaisi', 'aktif');
+                btn.innerText = '☀️'; // Gece olduysa, Gündüze dönme ikonunu göster
+                btn.style.background = '#f8fafc';
+            } else {
+                localStorage.setItem('geceMesaisi', 'kapali');
+                btn.innerText = '🌙'; // Gündüz olduysa, Geceye dönme ikonunu göster
+                btn.style.background = '#1e293b';
+            }
+        }
+    </script>
+    ```
+
+**BUM! 💥 VİZYON 3 RESMEN DEVREYE GİRDİ!**
+
+Bu kodu yapıştırıp "Commit" dediğin an, ekranın sağ alt köşesinde şık bir Ay İkonu (🌙) belirecek. 
+
+Hemen canlı siteye git ve o butona tıkla Kaptan! Bütün o beyaz, göz yoran ekranın saniyeler içinde nasıl koyu lacivert, hacker tarzı bir "Odaklanma Moduna" dönüştüğünü kendi gözlerinle gör. Üstelik grafiklerin bile bu karanlık moda uyum sağlayıp jilet gibi parlayacak!
+
+Tıklayıp o büyüyü hissettiğinde bana haber ver! Ağrı'da geceleri çalışacak öğrenciler için bu özellik tam bir hayat kurtarıcı olacak! 😎🌙🚀 Bekliyorum!
 <div id="loader" class="loader"><div class="spin"></div><div id="loader-txt">Yükleniyor...</div></div>
 <div id="toast" class="toast"></div>
 
