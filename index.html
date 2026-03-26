@@ -973,13 +973,35 @@ function renderQCard() {
     // --------------------------------------------------
     showLoader('Hesaplanıyor...'); 
     
-    let correct = 0, wrong = 0; 
-    currentQuiz.questions.forEach((q,i) => { 
-        if(quizAnswers[i] !== undefined) { 
-            if(quizAnswers[i] === q.correct) correct++; 
-            else wrong++; 
-        } 
-    }); 
+   // --- V4.0 HATA DEFTERİ: YANLIŞLARI AVLAYIP KASAYA KİLİTLEME MOTORU ---
+    let correct = 0, wrong = 0;
+    let newMistakes = []; // Yanlış yapılan soruların paketleneceği kutu
+
+    currentQuiz.questions.forEach((q, i) => {
+        if (quizAnswers[i] !== undefined) {
+            if (quizAnswers[i] === q.correct) {
+                correct++;
+            } else {
+                wrong++;
+                // 🚨 Öğrenci yanlış yaptı! Soruyu anında yakala ve listeye at!
+                newMistakes.push({
+                    sinavAdi: currentQuiz.title,
+                    soru: q, // Sorunun metni, resmi, her şeyi
+                    ogrencininCevabi: quizAnswers[i],
+                    tarih: new Date().toLocaleDateString('tr-TR')
+                });
+            }
+        }
+    });
+
+    // Eğer öğrencinin yanlışı varsa, bu yanlışları cihazın "Gizli Kasasına" (LocalStorage) kaydet!
+    if (newMistakes.length > 0 && currentStudent) {
+        // Kasada önceden kalan hatalar varsa onları da al (Silinmesinler)
+        let savedMistakes = JSON.parse(localStorage.getItem('hataDefteri_' + currentStudent.student_number) || '[]');
+        savedMistakes = [...savedMistakes, ...newMistakes]; // Eski hatalarla yenilerini birleştir
+        localStorage.setItem('hataDefteri_' + currentStudent.student_number, JSON.stringify(savedMistakes));
+    }
+    // -------------------------------------------------------------------
     
     let net = correct - (wrong / 4); 
     // İŞTE EKSİK OLAN SİHİRLİ FORMÜL BURASI (100 Üzerinden Puanlama)
