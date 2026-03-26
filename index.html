@@ -1766,13 +1766,12 @@ async function viewQuizResults(quizId, quizName) {
             </div>
             <div style="overflow-x:auto;">
                 <table>
-                    <tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Özel Veli Mesajı</th></tr>
-                    ${results.map((r, i) => { 
+                    <tr><th>Sıra</th><th>Öğrenci</th><th>Okul No</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th>Net</th><th>Özel Veli Mesajı</th><th>AI Koçluk</th></tr>
                         const msg = `Sayın Velimiz, öğrenciniz ${r.student_name} bugünkü "${quizName}" sınavında ${r.correct} Doğru, ${r.wrong} Yanlış, ${r.blank} Boş ile ${parseFloat(r.net).toFixed(2)} Net yapmıştır. Gelişimini takip edebilirsiniz. İyi günler dilerim. - ${currentTeacher.name}`; 
                         const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`; 
-                        return `<tr><td><strong style="color:var(--ink3);">${i + 1}</strong></td><td><strong>${r.student_name}</strong></td><td>${r.student_number}</td><td style="color:var(--correct); font-weight:bold;">${r.correct}</td><td style="color:var(--wrong); font-weight:bold;">${r.wrong}</td><td style="color:var(--ink3);">${r.blank}</td><td><span style="background:#e0e7ff; color:var(--primary); padding:6px 12px; border-radius:12px; font-weight:bold;">${parseFloat(r.net).toFixed(2)}</span></td><td><a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25D366; color:white; text-decoration:none; display:inline-block; padding:8px 12px; font-weight:bold;">💬 Gönder</a></td></tr>`; 
-                    }).join('')}
-                </table>
+                     return `<tr><td><strong style="color:var(--ink3);">${i + 1}</strong></td><td><strong>${r.student_name}</strong></td><td>${r.student_number}</td><td style="color:var(--correct); font-weight:bold;">${r.correct}</td><td style="color:var(--wrong); font-weight:bold;">${r.wrong}</td><td>${r.blank}</td><td><strong style="color:var(--primary); font-size:1.1rem; background:#e0e7ff; padding:4px 8px; border-radius:6px;">${parseFloat(r.net).toFixed(2)}</strong></td><td><button class="btn btn-sm" style="background:#10b981; color:white; border:none; border-radius:6px;" onclick="window.open('${waLink}', '_blank')">💬 Gönder</button></td><td><button class="btn btn-sm" style="background:#8b5cf6; color:white; padding:4px 10px; border-radius:6px; border:none; font-weight:bold; box-shadow:0 0 10px rgba(139,92,246,0.4);" onclick="getTeacherAIReport('${r.student_name}', ${r.correct}, ${r.wrong}, ${r.blank}, '${quizName}')">🤖 AI Raporu Al</button></td></tr>`;
+    }).join('')}
+        </table>
             </div>
         </div>`; 
         document.getElementById('tab-body').innerHTML = html; 
@@ -1782,6 +1781,36 @@ async function viewQuizResults(quizId, quizName) {
         hideLoader(); 
     } 
 }
+  // --- VİZYON 5.0: ÖĞRETMEN AI RAPOR MOTORU ---
+window.getTeacherAIReport = async function(name, correct, wrong, blank, examName) {
+    showLoader('🤖 ' + name + ' İçin AI Raporu Üretiliyor...');
+    const prompt = `Sen otoriter, tavizsiz ve son derece disiplinli bir eğitim koçusun. ${name} isimli öğrenci "${examName}" sınavında ${correct} doğru, ${wrong} yanlış, ${blank} boş yapmıştır. Öğrencinin bu sonucunu sert bir dille eleştir, eksiklerini yüzüne vur ve nasıl çalışması gerektiğine dair net bir eylem planı sun. Asla emoji kullanma. Sahte motivasyon verme. Gerçekçi ve sonuç odaklı ol.`;
+    
+    try {
+        const report = await callGeminiAI(prompt);
+        hideLoader();
+        const wpMessage = encodeURIComponent(`🎓 ${examName} - ${name} KİŞİSEL AI KOÇLUK RAPORU 🎓\n\n` + report);
+        const wpUrl = `https://wa.me/?text=${wpMessage}`;
+        
+        const modalHtml = `
+        <div id="ai-report-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:99999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
+            <div style="background:#1e293b; color:#f8fafc; width:100%; max-width:500px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.5); overflow:hidden; display:flex; flex-direction:column; max-height:85vh; border: 1px solid #334155;">
+                <div style="background:#0f172a; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155;">
+                    <h3 style="margin:0; color:#38bdf8; font-size:1.2rem;">🤖 AI Raporu: ${name}</h3>
+                    <button onclick="document.getElementById('ai-report-modal').remove()" style="background:transparent; border:none; color:#ef4444; font-size:1.5rem; cursor:pointer; font-weight:bold;">&times;</button>
+                </div>
+                <div style="padding:20px; overflow-y:auto; font-size:1rem; line-height:1.6; white-space:pre-wrap; color:#e2e8f0;">${report}</div>
+                <div style="padding:15px; background:#0f172a; border-top:1px solid #334155; display:flex; gap:10px;">
+                    <button onclick="window.open('${wpUrl}', '_blank')" style="width:100%; background:#25D366; color:#000; border:none; padding:14px; border-radius:8px; font-weight:bold; font-size:1.1rem; cursor:pointer;">📲 Veliye WhatsApp'tan Gönder</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (e) {
+        hideLoader();
+        showToast('❌ Rapor üretilirken hata oluştu.');
+    }
+};
   // --- V3.0 OTONOM ÇOKLU SORU İŞLEME MOTORU (BULK UPLOAD) ---
 // --- V4.0 GÖRSEL SIKIŞTIRMA MOTORU (CANVAS COMPRESSOR) ---
 async function compressImage(file, maxWidth = 1000, maxHeight = 1500, quality = 0.6) {
