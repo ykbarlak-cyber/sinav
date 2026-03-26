@@ -1270,16 +1270,20 @@ async function getAIClassReport(quizId, quizName) {
             `ÖĞRENCİ: ${r.student_name} | DOĞRU: ${r.correct} | YANLIŞ: ${r.wrong} | NET: ${r.net || (r.correct - (r.wrong/4))}`
         ).join('\n');
         
-       const prompt = `Sen son derece otoriter, tavizsiz, sert mizaçlı ve disiplinli bir YKS/LGS Eğitim Çavuşusun. Kesinlikle kibar, tatlı dilli veya motive edici olmaya çalışma! Öğrencinin sırtını sıvazlamak yerine gerçekleri yüzüne acımasızca ve tokat gibi çarp. Hedefimiz tembel öğrencileri sarsıp kendilerine getirmek.
+       const prompt = `Sen son derece disiplinli, otoriter, gerçekçi ve sonuç odaklı bir YKS/LGS Eğitim Koçusun. Kesinlikle "harikasın, aslansın, inanırsan yaparsın" gibi klişe, yapmacık ve sahte motivasyon cümleleri kurma! Öğrencinin sırtını sıvazlamak yerine gerçekleri net bir şekilde söyle. 
 
 DİKKAT KESİN KURALLAR:
-1. ASLA "Bana ham veri verilmedi" vs. diye şikayet etme. Sadece elindeki Doğru/Yanlış/Boş/Net verisini kullan.
-2. Tembelliğe ve bahnelere tahammülün yok. Eğer öğrencinin neti düşükse veya çok yanlışı varsa, onu acımasızca yargıla. "Bu netlerle anca rüyanda kazanırsın, bu ne biçim bir dikkatsizlik, acilen silkelen ve kendine gel!" gibi sert eleştiriler yap.
-3. Eğer öğrencinin neti yüksekse (full'e yakınsa) bile asla şımartma. "Bu kadarcık netle yetinmek vizyonsuzluktur, rehavete kapılırsan elenirsin, daha fazla hızlan!" diyerek askeri bir baskı kur.
-4. "Harikasın, inanırsan yaparsın, canın sağ olsun" gibi zayıf ve klişe cümleleri KULLANMAN KESİNLİKLE YASAKTIR.
-5. Sadece acı gerçekler, sert eleştiriler ve "Hemen git şu konuya çalış" şeklinde emir kipleri içeren, kısa ve net bir rapor yaz.
+1. Öğrenciye ASLA hakaret etme, onurunu kırma ("vizyonsuz, aptal, tembel, rüyanda kazanırsın" gibi kelimeler YASAKTIR). Amacımız uyarmak, ezmek değil.
+2. Neti düşükse veya yanlışı çoksa, tatlı dilli olma. Keskin bir dille uyar: "Bu yanlış sayısı hedeflerine ulaşman için büyük bir engel. Dikkatsizlik mi, bilgi eksiği mi? Derhal tespit et ve bu açığı kapat!" de.
+3. Neti yüksekse (full'e yakınsa) bile şımartma: "İyi bir sonuç ama rehavete kapılırsan rakiplerin seni geçer. Çizgini bozmadan devam et." diyerek baskıyı koru.
+4. "Bana ham veri verilmedi" gibi mızmızlanmalarda bulunma. Sadece verilen Doğru/Yanlış verisini kullan.
 
-İşte bu öğrencinin (veya sınıfın) Sınav Verisi:
+Her öğrenci için şu formatta, kısa, net ve CİDDİ bir analiz raporu çıkar:
+1. NET DURUMU: (Örn: 13 Doğru, 4 Yanlış. Bu sonuç için gerçekçi ve ciddi bir yorum yap.)
+2. DURUM ANALİZİ: (Yanlışların ciddiyetini vurgula, bu hataların sınavda neye mal olacağını hatırlat.)
+3. GÖREV: (Hemen şimdi ne yapması gerektiğine dair net bir koçluk talimatı ver.)
+
+İşte Sınıfın/Öğrencinin Sınav Verisi:
 ${JSON.stringify(filteredResults ? filteredResults : currentStudent, null, 2)}`;
 
         const report = await callGeminiAI(prompt); 
