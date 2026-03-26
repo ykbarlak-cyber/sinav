@@ -341,7 +341,17 @@ table tr:hover {
     <div id="review-list"></div>
   </div>
 </div>
-
+<div class="screen" id="s-mistakes">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0; color:var(--primary);">📓 Hata Defterim</h2>
+            <button class="btn btn-excel" onclick="showScreen('s-student')" style="padding:8px 15px; background:#64748b; border:none; color:white; border-radius:8px; cursor:pointer;">🔙 Geri Dön</button>
+        </div>
+        
+        <div id="mistakes-container" style="display:flex; flex-direction:column; gap:15px;">
+            </div>
+        
+        <button class="btn btn-primary" onclick="clearMistakes()" style="width:100%; margin-top:20px; background:#ef4444; border:none; padding:12px; font-size:1.1rem; color:white; border-radius:8px; cursor:pointer;">🗑️ Tüm Hatalarımı Temizle</button>
+    </div>
 <script>
 // ═══════════════════════════════════════════════
 // AYARLAR (ŞİFRELERİNİ BURAYA YAPIŞTIR)
