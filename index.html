@@ -1072,6 +1072,13 @@ function renderQCard() {
         nb.className = 'btn btn-primary'; 
         nb.onclick = () => qNav(1); 
     } 
+  // --- V4.0 EKSİK SORU GEÇİŞ MOTORU ---
+    window.qNav = function(step) {
+        currentQIdx += step;
+        if (currentQIdx < 0) currentQIdx = 0;
+        if (currentQIdx >= currentQuiz.questions.length) currentQIdx = currentQuiz.questions.length - 1;
+        renderQCard();
+    };
 } function pickAnswer(i){ if(window.isReviewMode) return; quizAnswers[currentQIdx]=i; renderQCard(); }async function finishQuiz(isTimeUp = false) { 
     const blank = currentQuiz.questions.length - Object.keys(quizAnswers).length; 
     if(!isTimeUp && blank > 0 && !confirm(`⚠️ ${blank} boş var. Bitirilsin mi?`)) return; 
