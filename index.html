@@ -451,6 +451,7 @@ async function renderStudentDashboard() {
 
     <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
         <div class="card" style="flex:2; border-top: 4px solid var(--primary); min-width:300px;">
+        <button onclick="showMistakes()" class="btn btn-primary" style="width:100%; margin-bottom:20px; background:#1e293b; color:white; border:none; font-size:1.1rem; padding:12px; box-shadow:0 4px 6px rgba(0,0,0,0.1); border-radius:8px; cursor:pointer;">📓 Hata Defterimi Aç</button>
             <h3 style="margin-top:0">Yaklaşan / Aktif Sınavlar</h3>
             <div id="student-active-quizzes"><div class="spin" style="margin:20px auto"></div></div>
         </div>
@@ -1739,6 +1740,64 @@ finishQuiz = async function(isTimeUp = false) {
     }
     await oldFinishQuiz(isTimeUp);
 };
+  // --- V4.0 HATA DEFTERİ GÖSTERİM MOTORU ---
+function showMistakes() {
+    showScreen('s-mistakes'); // Hata ekranını aç
+    const container = document.getElementById('mistakes-container');
+    if(!currentStudent) return;
+    
+    // Öğrencinin gizli kasasından hataları çek
+    let savedMistakes = JSON.parse(localStorage.getItem('hataDefteri_' + currentStudent.student_number) || '[]');
+    
+    // Eğer hiç hatası yoksa şov yap!
+    if(savedMistakes.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:30px; background:#f8fafc; border-radius:12px; border:2px dashed #cbd5e1; color:#64748b; font-size:1.1rem;">Harika! 🎉 Kasanda hiç yanlış sorun yok. Bütün düşmanları yok etmişsin!</div>';
+        return;
+    }
+
+    // Hatalar varsa, herbirini şık bir karta dönüştür
+    let html = '';
+    // En yeni hata en üstte çıksın diye listeyi ters çeviriyoruz
+    [...savedMistakes].reverse().forEach((m, index) => {
+        const q = m.soru;
+        const stuAns = m.ogrencininCevabi;
+        const corAns = q.correct;
+
+        html += `
+        <div class="card" style="border-left:5px solid #ef4444; box-shadow:0 2px 4px rgba(0,0,0,0.05); padding:15px; margin-bottom:15px;">
+            <div style="font-size:0.85rem; color:#64748b; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
+                📅 <b>${m.tarih}</b> | 📝 ${m.sinavAdi}
+            </div>
+            <div style="font-size:1.1rem; font-weight:500; margin-bottom:15px; color:#1e293b;">${q.text}</div>
+            ${q.image ? `<img src="${q.image}" style="max-width:100%; border-radius:8px; margin-bottom:15px; display:block;">` : ''}
+            
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                ${q.options.map((opt, i) => {
+                    let bgColor = "#f8fafc", borderColor = "#e2e8f0", textColor = "#334155", icon = "";
+                    if(i === corAns) { // Doğru olan şık yeşil yansın
+                        bgColor = "#dcfce7"; borderColor = "#22c55e"; textColor = "#15803d"; icon = "✅ DOĞRU";
+                    } else if (i === stuAns) { // Çocuğun atladığı yanlış şık kırmızı yansın
+                        bgColor = "#fee2e2"; borderColor = "#ef4444"; textColor = "#b91c1c"; icon = "❌ SENİN CEVABIN";
+                    }
+                    return `
+                    <div style="padding:10px; border:2px solid ${borderColor}; border-radius:8px; background:${bgColor}; color:${textColor}; font-weight:bold; font-size:0.95rem; display:flex; justify-content:space-between;">
+                        <span>${['A','B','C','D','E'][i]}) ${opt}</span>
+                        <span style="font-size:0.8rem;">${icon}</span>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function clearMistakes() {
+    if(confirm('🚨 DİKKAT: Tüm hata geçmişin silinecek! Emin misin?')) {
+        localStorage.removeItem('hataDefteri_' + currentStudent.student_number);
+        showMistakes(); // Ekranı yenile (Boş olduğunu görsün)
+    }
+}
+// ------------------------------------------
 </script>
 </body>
 </html>
