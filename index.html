@@ -1359,7 +1359,7 @@ ${JSON.stringify(filteredResults ? filteredResults : currentStudent, null, 2)}`;
     document.body.removeChild(indirLink);
 
  // VİZYON 5.0: EKRANDA ŞIK RAPOR VE WHATSAPP BUTONU
-    const wpMessage = encodeURIComponent(dosyaIcerigi);
+  const wpMessage = encodeURIComponent(dosyaIcerigi).replace(/'/g, "%27");
     const wpUrl = `https://wa.me/?text=${wpMessage}`;
 
     // Raporu daha şık göstermek için Markdown yıldızlarını (**) kalın yazıya çevirelim
