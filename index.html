@@ -1870,35 +1870,38 @@ STRATEJİK EYLEM PLANI:
         const report = await callGeminiAI(prompt);
         hideLoader();
         
-        const dosyaIcerigi = `🎓 ${examName} - ${name} KİŞİSEL AI KOÇLUK RAPORU 🎓\n\n` + report;
+                const dosyaIcerigi = `🎓 ${examName} - ${name} KİŞİSEL AI KOÇLUK RAPORU 🎓\n\n` + report;
         const wpMessage = encodeURIComponent(dosyaIcerigi);
         const wpUrl = `https://wa.me/?text=${wpMessage}`;
         
-        // Markdown yıldızlarını (**) şık HTML kalın yazıya çevir
-        const sikRapor = report.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff;">$1</strong>');
+        // Markdown yıldızlarını (**) şık HTML kalın yazıya çevir (Çok Satırlı Kusursuz Destek)
+        const sikRapor = report.replace(/\*\*([\s\S]*?)\*\*/g, '<strong style="color:#38bdf8;">$1</strong>');
         
         // İndirme (Download) butonu için arka plan hazırlığı
         const blob = new Blob(["\uFEFF" + dosyaIcerigi], { type: 'text/plain;charset=utf-8' });
         const downloadUrl = URL.createObjectURL(blob);
         
         const modalHtml = `
-        <div id="ai-report-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:99999; display:flex; justify-content:center; align-items:center; padding:15px; font-family:sans-serif; box-sizing:border-box;">
-            <div style="background:#1e293b; color:#f8fafc; width:100%; max-width:550px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.5); display:flex; flex-direction:column; max-height:90vh; overflow:hidden; border: 1px solid #334155;">
+        <div id="ai-report-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:99999; display:flex; justify-content:center; align-items:center; padding:15px; box-sizing:border-box;">
+            
+            <div style="background:#1e293b; width:100%; max-width:500px; border-radius:12px; display:block; position:relative; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); border:1px solid #334155;">
                 
-                <div style="background:#0f172a; padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155;">
-                    <h3 style="margin:0; color:#38bdf8; font-size:1.2rem;">🤖 Rapor: ${name}</h3>
-                    <button onclick="document.getElementById('ai-report-modal').remove()" style="background:transparent; border:none; color:#ef4444; font-size:1.8rem; line-height:1; cursor:pointer; font-weight:bold;">&times;</button>
+                <div style="background:#0f172a; padding:15px 20px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0; color:#38bdf8; font-size:1.1rem;">🤖 Rapor: ${name}</h3>
+                    <button onclick="document.getElementById('ai-report-modal').remove()" style="background:transparent; border:none; color:#ef4444; font-size:1.5rem; cursor:pointer; font-weight:bold; padding:0; line-height:1;">&times;</button>
                 </div>
                 
-                <div style="padding:20px; overflow-y:auto; font-size:0.95rem; line-height:1.6; white-space:pre-wrap; color:#e2e8f0; word-wrap:break-word;">${sikRapor}</div>
+                <div style="padding:20px; max-height:60vh; overflow-y:auto; font-size:0.95rem; line-height:1.6; color:#e2e8f0; white-space:pre-wrap; word-wrap:break-word; word-break:break-word; overflow-wrap:break-word;">${sikRapor}</div>
                 
-                <div style="padding:15px; background:#0f172a; border-top:1px solid #334155; display:flex; flex-direction:column; gap:10px;">
-                    <button onclick="window.open('${wpUrl}', '_blank')" style="width:100%; background:#25D366; color:#000; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow:0 4px 6px rgba(37,211,102,0.3);">📲 WhatsApp'a Gönder</button>
+                <div style="background:#0f172a; padding:15px; border-top:1px solid #334155; display:flex; flex-direction:column; gap:10px;">
+                    <button onclick="window.open('${wpUrl}', '_blank')" style="width:100%; background:#25D366; color:#000; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer;">📲 WhatsApp'a Gönder</button>
                     <a href="${downloadUrl}" download="${name}_AI_Raporu.txt" style="display:block; width:100%; text-align:center; background:#3b82f6; color:#fff; text-decoration:none; border:none; padding:12px; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer; box-sizing:border-box;">⬇️ Cihaza İndir</a>
                 </div>
+                
             </div>
         </div>`;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+
     } catch (e) {
         hideLoader();
         showToast('❌ Rapor üretilirken hata oluştu.');
