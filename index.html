@@ -691,10 +691,12 @@ activeQuizzes = activeQuizzes.filter(q => {
                         <span style="background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:6px; font-size:0.85rem; font-weight:bold; border:1px solid #bae6fd;">⏱️ ${q.time_limit || 60} Dakika</span>
                     </div>
                 </div>
-                ${isCompleted
-                    ? `<button class="btn btn-secondary btn-sm" disabled style="background:#cbd5e1; color:#475569; border:none;">☑ Çözüldü</button>`
-                    : `(q.expires_at && new Date(q.expires_at) < new Date()) ? `<button class="btn btn-sm" disabled style="background:#475569; color:#94a3b8; cursor:not-allowed; border:none; box-shadow:none;">❌ Süre Doldu</button>` : `<button class="btn btn-primary btn-sm" onclick="startQuiz('${q.id}')" style="box-shadow:0 4px 6px -1px rgba(56, 189, 248, 0.4);">🚀 Sınava Başla</button>``
-                }
+               ${isCompleted
+            ? `<button class="btn btn-secondary btn-sm" disabled style="background:#cbd5e1; color:#475569; border:none;">✅ Çözüldü</button>`
+            : (q.expires_at && new Date(q.expires_at) < new Date()) 
+                ? `<button class="btn btn-sm" disabled style="background:#475569; color:#94a3b8; cursor:not-allowed; border:none; box-shadow:none;">❌ Süre Doldu</button>` 
+                : `<button class="btn btn-primary btn-sm" onclick="startQuiz('${q.id}')" style="box-shadow:0 4px 6px -1px rgba(56, 189, 248, 0.4);">🚀 Sınava Başla</button>`
+        }
             </div>
             `
             }).join('');
