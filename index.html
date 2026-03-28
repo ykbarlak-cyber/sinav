@@ -1771,8 +1771,11 @@ async function processExcelFile() {
                 savedCount++;
             }
 
-            hideLoader();
-            document.getElementById('externalModal').remove();
+           hideLoader();
+const myModal = document.getElementById('externalModal');
+if (myModal) {
+    myModal.remove();
+}
             
             showToast(`🎉 İNANILMAZ! Tam ${savedCount} öğrencinin netleri ve puanları sisteme başarıyla işlendi!`);
             
