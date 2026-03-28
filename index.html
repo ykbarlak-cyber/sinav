@@ -1791,13 +1791,12 @@ if (myModal) {
 
     reader.readAsArrayBuffer(file);
 }
-  // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
+ // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
 async function showAllExamResults() {
     const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
     
     showLoader('Tüm Sonuçlar Veritabanından Çekiliyor...');
     try {
-        // Sadece bu sınıfın sonuçlarını, puan sırasına göre en yüksekten düşüğe (score.desc) çekiyoruz
         const res = await sbFetch(`quiz_results?class_id=eq.${currentC}&order=score.desc`);
         hideLoader();
 
@@ -1805,7 +1804,6 @@ async function showAllExamResults() {
             return alert('⚠️ Bu sınıfa ait henüz bir sınav sonucu bulunamadı. Önce Excel yükleyin.');
         }
 
-        // Sonuçları Sınav Adına Göre Grupla
         let groupedResults = {};
         res.forEach(item => {
             const examName = item.quiz_title || 'İsimsiz Sınav';
@@ -1813,18 +1811,26 @@ async function showAllExamResults() {
             groupedResults[examName].push(item);
         });
 
-        // Fiyakalı Tabloyu Çiz
         let html = `
         <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); z-index:99999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
             <div class="card" style="width:100%; max-width:900px; background:#fff; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:12px; margin-bottom:20px;">
-                    <h2 style="margin:0; color:#10b981; font-size:1.6rem;">🏆 Tüm Sınav Sonuçları (Liderlik Tablosu)</h2>
-                    <button onclick="document.getElementById('masterResultsModal').remove()" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#ef4444; line-height:1;">&times;</button>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:12px; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                    <h2 style="margin:0; color:#10b981; font-size:1.6rem;">🏆 Tüm Sınav Sonuçları</h2>
+                    
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="text" id="studentSearchBox" onkeyup="filterExamStudents()" placeholder="🔍 Öğrenci Ara..." style="padding:10px; border-radius:8px; border:2px solid #e2e8f0; outline:none; font-weight:bold; color:#475569; width:250px;">
+                        <button onclick="document.getElementById('masterResultsModal').remove()" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#ef4444; line-height:1;">&times;</button>
+                    </div>
                 </div>`;
 
         for (const [examName, students] of Object.entries(groupedResults)) {
             html += `
-                <h3 style="background:#f8fafc; padding:12px; border-left:4px solid #8b5cf6; margin-top:20px; color:#334155;">📌 ${examName}</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:12px; border-left:4px solid #8b5cf6; margin-top:20px;">
+                    <h3 style="margin:0; color:#334155;">📌 ${examName}</h3>
+                    <button onclick="deleteExamResults('${examName}')" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; transition:0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">🗑️ Sınavı Sil</button>
+                </div>
+
                 <div style="overflow-x:auto;">
                     <table style="width:100%; border-collapse: collapse; margin-bottom: 20px; font-size:0.95rem;">
                         <thead>
@@ -1839,20 +1845,19 @@ async function showAllExamResults() {
                         <tbody>`;
             
             students.forEach((s, index) => {
-                // İlk 3'e madalya koyalım şov olsun
                 let rankDisplay = index + 1;
                 if (index === 0) rankDisplay = '🥇 1.';
                 else if (index === 1) rankDisplay = '🥈 2.';
                 else if (index === 2) rankDisplay = '🥉 3.';
 
                 html += `
-                    <tr style="border-bottom:1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <tr class="student-result-row" data-name="${s.student_name ? s.student_name.toLowerCase() : ''}" style="border-bottom:1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                         <td style="padding:12px; font-weight:bold; color:#64748b; text-align:center;">${rankDisplay}</td>
                         <td style="padding:12px; font-weight:bold; color:#0f172a;">${s.student_name || 'Bilinmeyen Öğrenci'}</td>
                         <td style="padding:12px; color:#10b981; font-weight:bold; text-align:center;">${s.correct || 0} Net</td>
                         <td style="padding:12px; color:#3b82f6; font-weight:bold; text-align:center;">${s.score || 0}</td>
                         <td style="padding:12px; text-align:center;">
-                            <button onclick="alert('Burası Kaptan Yüksel in fiyakalı Karne Basım Matbaası olacak! Çok yakında!')" style="background:#8b5cf6; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">📊 Karne Çıkar</button>
+                            <button onclick="alert('Kaptan! Burası gerçek PDF Karne Basım Matbaası olacak! Altyapı hazır, şov çok yakında!')" style="background:#8b5cf6; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(139,92,246,0.3);">📊 Karne Çıkar</button>
                         </td>
                     </tr>`;
             });
@@ -1868,6 +1873,52 @@ async function showAllExamResults() {
         alert('❌ Sonuçlar getirilirken hata oluştu.');
     }
 }
+
+// --- ARAMA KUTUSU FİLTRELEME FONKSİYONU ---
+window.filterExamStudents = function() {
+    const input = document.getElementById('studentSearchBox').value.toLowerCase();
+    const rows = document.querySelectorAll('.student-result-row');
+    
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name');
+        if (name.includes(input)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+};
+
+// --- SINAV SİLME FONKSİYONU ---
+window.deleteExamResults = async function(examTitle) {
+    if (!confirm(`⚠️ DİKKAT! "${examTitle}" sınavına ait TÜM öğrenci sonuçları kalıcı olarak silinecek. Onaylıyor musunuz?`)) {
+        return;
+    }
+
+    showLoader('Sınav veritabanından siliniyor...');
+    try {
+        const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
+        
+        // Supabase'den bu sınıfa ve bu sınav adına ait tüm kayıtları uçur
+        await sbFetch(`quiz_results?class_id=eq.${currentC}&quiz_title=eq.${encodeURIComponent(examTitle)}`, {
+            method: 'DELETE'
+        });
+        
+        hideLoader();
+        
+        // Pencereyi kapat ve güncel listeyi tekrar aç
+        const modal = document.getElementById('masterResultsModal');
+        if (modal) modal.remove();
+        
+        alert('✅ Sınav başarıyla silindi!');
+        showAllExamResults(); 
+
+    } catch (err) {
+        hideLoader();
+        console.error(err);
+        alert('❌ Sınav silinirken bir hata oluştu.');
+    }
+};
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
