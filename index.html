@@ -1750,130 +1750,94 @@ async function processExcelFile() {
 }
 
 
-  // --- V2.1 FİZİKİ DENEME EXCEL/CSV TOPLU YÜKLEME MODÜLÜ (OTONOM) ---
-
-// 1. Sihirli Pencere (Pencereyi açan kısım)
+  // --- VİZYON 8.0: EXCEL VE MİSAFİR ÖĞRENCİ KARNE MOTORU ---
 function showExternalExamModal() {
-    const examName = prompt("Deneme Sınavı Adı (Örn: Yediiklim-TG-1):", "");
-    if (!examName) return;
+    const modalHTML = `
+    <div id="externalModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); z-index:99999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
+        <div class="card" style="width:100%; max-width:500px; background:#fff; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:12px; margin-bottom:20px;">
+                <h2 style="margin:0; color:#6d28d9; font-size:1.4rem;">📊 Optik & Excel Yükleme</h2>
+                <button onclick="document.getElementById('externalModal').remove()" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#ef4444; line-height:1;">&times;</button>
+            </div>
 
-    let modalHTML = `
-        <div id="externalModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px;">
-            <div class="card" style="width:100%; max-width:600px; background:white; padding:30px; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h2 style="color:var(--primary); margin:0;">📂 ${examName} - Otonom Sonuç Yükleme</h2>
-                    <span style="font-size:1.5rem; cursor:pointer;" onclick="document.getElementById('externalModal').remove()">×</span>
-                </div>
-                
-                <p style="color:var(--ink3); margin:15px 0;">Yayınevinin Excel/CSV formatındaki optik sonuç dosyasını yükleyin.</p>
-                
-                <div style="background:#f1f5f9; padding:20px; border-radius:10px; border:2px dashed var(--border); text-align:center;">
-                    <label for="csvFileInput" class="btn btn-secondary btn-sm" style="cursor:pointer; padding:10px 20px;">
-                        📷 CSV Dosyası Seç (xlsx'i csv yapın)
-                    </label>
-                    <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleExternalCsvUpload(this, '${examName}')">
-                    <p id="fileNameSpan" style="margin-top:10px; color:var(--primary); font-weight:bold;"></p>
-                </div>
+            <div class="field" style="margin-bottom:15px;">
+                <label style="font-weight:bold; display:block; margin-bottom:5px; color:#334155;">Sınav Adı</label>
+                <input type="text" id="excel-exam-name" placeholder="Örn: Türkiye Geneli TYT Denemesi" style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px; outline:none;" />
+            </div>
 
-                <div style="margin-top:20px; display:flex; justify-content:flex-end;">
-                    <button class="btn btn-danger btn-sm" onclick="document.getElementById('externalModal').remove()">İptal</button>
+            <div class="field" style="margin-bottom:15px;">
+                <label style="font-weight:bold; display:block; margin-bottom:5px; color:#334155;">Öğrenci Kitlesi</label>
+                <select id="excel-exam-type" style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px; background:#f8fafc; outline:none; font-weight:bold; color:#475569;">
+                    <option value="registered">🏫 Sadece Sistemde Kayıtlı Öğrenciler</option>
+                    <option value="guest">🏆 Bursluluk / Misafir Öğrenci (Kayıtsız)</option>
+                </select>
+            </div>
+
+            <div class="field" style="margin-bottom:25px;">
+                <label style="font-weight:bold; display:block; margin-bottom:5px; color:#334155;">Excel / CSV Dosyası Yükle</label>
+                <div style="border:2px dashed #8b5cf6; padding:20px; text-align:center; border-radius:12px; background:#faf5ff; cursor:pointer;" onclick="document.getElementById('excel-file-upload').click()">
+                    <div style="font-size:2.5rem; margin-bottom:10px;">📄</div>
+                    <span style="font-weight:bold; color:#6d28d9;">Dosya Seçmek İçin Tıklayın</span>
+                    <input type="file" id="excel-file-upload" accept=".xlsx, .xls, .csv" style="display:none;" onchange="document.getElementById('excel-file-name').innerText = this.files[0] ? this.files[0].name : 'Dosya seçilmedi';" />
+                    <p id="excel-file-name" style="margin:10px 0 0 0; font-size:0.9rem; color:#64748b;">(Henüz dosya seçilmedi)</p>
                 </div>
             </div>
+
+            <button class="btn btn-primary" onclick="processExcelFile()" style="width:100%; padding:14px; font-size:1.1rem; font-weight:bold; background:#8b5cf6; border:none; border-radius:8px; box-shadow:0 4px 6px rgba(139,92,246,0.3); color:white; cursor:pointer;">🚀 Dosyayı Analiz Et ve Karneleri Çıkar</button>
         </div>
-    `;
+    </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-// 2. CSV Okuyucu ve İşleyici Motor
-function handleExternalCsvUpload(input, examName) {
-    const file = input.files[0];
-    if (!file) return;
+// --- VİZYON 8.0: EXCEL BEYNİ (DOSYA OKUYUCU MOTOR) ---
+async function processExcelFile() {
+    const examName = document.getElementById('excel-exam-name').value.trim();
+    const examType = document.getElementById('excel-exam-type').value;
+    const fileInput = document.getElementById('excel-file-upload');
 
-    document.getElementById('fileNameSpan').innerText = file.name;
+    if (!examName) {
+        alert('⚠️ Lütfen önce sınavın adını girin (Örn: Türkiye Geneli TYT)');
+        return;
+    }
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert('⚠️ Lütfen bir Excel veya CSV dosyası seçin!');
+        return;
+    }
+
+    const file = fileInput.files[0];
     const reader = new FileReader();
-    reader.onload = function(e) {
-        const text = e.target.result;
-        processCsvData(text, examName);
-    };
-    reader.readAsText(file); // Dosyayı oku
-}
 
-// 3. Veri İşleme ve Supabase'e Yazma Motoru (Kalp burası)
-async function processCsvData(csvText, examName) {
-    showLoader('CSV verileri okunuyor ve otonom işleniyor...');
-    
-    // Tarayıcıdaki veriler
-    const rows = csvText.split('\n');
-    const resultsToSave = [];
-    
-    // Öğretmenin o an seçtiği sınıf/şube
-    const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
+    showLoader('Excel Dosyası Çözümleniyor...');
 
-    // Excel formatı (B Seçeneği - Örnek Fotoğrafına Göre Sütun Dağılımı):
-    // 0: Sıra, 1: Okul No, 2: Ad Soyad, 3: Türkçe D, 4: Türkçe Y...
-    // 7: Mat D, 8: Mat Y...
-    
-    const subjectMap = {
-        "Türkçe": {dIdx: 3, yIdx: 4},
-        "Matematik": {dIdx: 7, yIdx: 8},
-        "Fen": {dIdx: 11, yIdx: 12}, // Örnek, Excel'de 11-12
-        "Sosyal": {dIdx: 15, yIdx: 16} // Örnek, Excel'de 15-16
-        // Excel dosyanın gerçek sütun numaralarına göre bunları ayarla!
-    };
+    reader.onload = async function(e) {
+        try {
+            // SheetJS Gözlüğü ile Excel'i oku
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.SheetNames[0];
+            const excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
 
-    // 1. Adım: CSV'yi oku ve öğrenci-öğrenci ayır
-    for(let i = 1; i < rows.length; i++) { // Header'ı atla (1'den başla)
-        if (!rows[i].trim()) continue; // Boş satırsa atla
-        
-        const cols = rows[i].split(';'); // Genelde noktalı virgüldür (veya ',')
-        const studentName = (cols[2] || '').trim(); // Örnek Excel'de 2. sütun
-
-        if(!studentName) continue; // Ad yoksa atla
-
-        // 2. Adım: Her ders için ayrı bir kayıt oluştur (Yapay Zeka Analizi İçin Kritik)
-        for (const [subjectName, indices] of Object.entries(subjectMap)) {
-            const d = parseInt(cols[indices.dIdx]) || 0;
-            const y = parseInt(cols[indices.yIdx]) || 0;
-
-            if (d > 0 || y > 0) { // O derste veri varsa kaydet
-                resultsToSave.push({
-                    student_name: studentName,
-                    quiz_title: `${examName} - ${subjectName} (Fiziki)`, // Otonom başlık
-                    correct: d,
-                    wrong: y,
-                    empty: 0, // Boş verisi yoksa 0 (veya hesapla)
-                    score: (d * 5).toFixed(2), // Şimdilik basit puan
-                    institution_id: currentInstitution.id,
-                    class_id: currentC
-                });
+            if (excelRows.length === 0) {
+                hideLoader();
+                alert('⚠️ Yüklediğiniz Excel dosyası boş görünüyor!');
+                return;
             }
-        }
-    }
 
-    if(resultsToSave.length === 0) {
-        hideLoader();
-        return alert("CSV dosyasında geçerli bir veri bulunamadı! Sütun başlıklarını kontrol edin.");
-    }
+            hideLoader();
+            document.getElementById('externalModal').remove(); // Kutuyu kapat
+            
+            // ZAFER ÇIĞLIĞI!
+            console.log("EXCEL'DEN BAŞARIYLA OKUNAN VERİ:", excelRows);
+            alert(`🎉 İNANILMAZ! Tam ${excelRows.length} satır veri saniyeler içinde okundu!\n\nSınav: ${examName}\nTür: ${examType === 'guest' ? 'Misafir/Bursluluk' : 'Kayıtlı Öğrenciler'}\n\nLütfen F12'ye (Konsol) basıp okunan verilerin mükemmelliğine bak Kaptan!`);
 
-    // 3. Adım: Toplu Kayıt İşlemi
-    try {
-        let count = 0;
-        for (const result of resultsToSave) {
-            await sbFetch('quiz_results', {
-                method: 'POST',
-                body: JSON.stringify(result)
-            });
-            count++;
+        } catch (error) {
+            hideLoader();
+            console.error(error);
+            alert('❌ Dosya okunurken bir hata oluştu. Excel dosyanızın bozuk olmadığından emin olun.');
         }
-        hideLoader();
-        document.getElementById('externalModal').remove();
-        showToast(`✅ Otonom Operasyon Başarılı! ${resultsToSave.length} satırlık ders verisi ${count} öğrenci hanesine işlendi!`);
-        if(typeof renderStatsTab === 'function') renderStatsTab(); // İstatistikleri yenile
-        
-    } catch (e) {
-        hideLoader();
-        showToast('❌ Otonom kayıt sırasında hata oluştu.');
-    }
+    };
+
+    reader.readAsArrayBuffer(file);
 }
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
