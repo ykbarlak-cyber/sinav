@@ -1698,7 +1698,7 @@ function showExternalExamModal() {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-// --- VİZYON 8.0: EXCEL BEYNİ (DOSYA OKUYUCU MOTOR) ---
+// --- VİZYON 8.0: EXCEL BEYNİ (ŞİFRE KIRICI & KARNE MOTORU) ---
 async function processExcelFile() {
     const examName = document.getElementById('excel-exam-name').value.trim();
     const examType = document.getElementById('excel-exam-type').value;
@@ -1709,18 +1709,17 @@ async function processExcelFile() {
         return;
     }
     if (!fileInput.files || fileInput.files.length === 0) {
-        alert('⚠️ Lütfen bir Excel veya CSV dosyası seçin!');
+        alert('⚠️ Lütfen bir Excel dosyası seçin!');
         return;
     }
 
     const file = fileInput.files[0];
     const reader = new FileReader();
 
-    showLoader('Excel Dosyası Çözümleniyor...');
+    showLoader('Excel Dosyası Şifreleri Kırılıyor...');
 
     reader.onload = async function(e) {
         try {
-            // SheetJS Gözlüğü ile Excel'i oku
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             const firstSheet = workbook.SheetNames[0];
@@ -1728,27 +1727,67 @@ async function processExcelFile() {
 
             if (excelRows.length === 0) {
                 hideLoader();
-                alert('⚠️ Yüklediğiniz Excel dosyası boş görünüyor!');
+                alert('⚠️ Yüklediğiniz Excel dosyası boş!');
                 return;
             }
 
+            let savedCount = 0;
+            const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
+
+            // 4. satırdan (Index 3) itibaren öğrencileri tara
+            for (let i = 3; i < excelRows.length; i++) {
+                const row = excelRows[i];
+                
+                const ogrenciAdi = row['__EMPTY_1'];
+                const tytPuani = row['__EMPTY_40'];
+                
+                // Eğer satırda Öğrenci Adı ve Puan yoksa (boş/çöp satırsa) atla
+                if (!ogrenciAdi || !tytPuani) continue;
+
+                // Netleri Çek (Eğer boşsa 0 yaz)
+                const turkceNet = parseFloat(row['__EMPTY_6']) || 0;
+                const sosyalNet = parseFloat(row['__EMPTY_18']) || 0;
+                const matNet = parseFloat(row['__EMPTY_24']) || 0;
+                const fenNet = parseFloat(row['__EMPTY_33']) || 0;
+                
+                const toplamNet = turkceNet + sosyalNet + matNet + fenNet;
+                const siralama = row['__EMPTY_42'] || "-";
+
+                // Supabase'e "quiz_results" tablosuna jilet gibi kaydet
+                await sbFetch('quiz_results', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        student_name: ogrenciAdi,
+                        quiz_title: examName + " (Fiziki)",
+                        score: parseFloat(tytPuani).toFixed(2), // Puanı küsuratlı al
+                        correct: Math.round(toplamNet), // Toplam Neti Doğru sütununa yaz (Geçici görsel için)
+                        wrong: 0,
+                        empty: 0,
+                        institution_id: currentInstitution.id,
+                        class_id: currentC,
+                        // Not: İleride veritabanına "turkce_net", "mat_net" sütunları eklersek buraya direkt onları da basarız!
+                    })
+                });
+                savedCount++;
+            }
+
             hideLoader();
-            document.getElementById('externalModal').remove(); // Kutuyu kapat
+            document.getElementById('externalModal').remove();
             
-            // ZAFER ÇIĞLIĞI!
-            console.log("EXCEL'DEN BAŞARIYLA OKUNAN VERİ:", excelRows);
-            alert(`🎉 İNANILMAZ! Tam ${excelRows.length} satır veri saniyeler içinde okundu!\n\nSınav: ${examName}\nTür: ${examType === 'guest' ? 'Misafir/Bursluluk' : 'Kayıtlı Öğrenciler'}\n\nLütfen F12'ye (Konsol) basıp okunan verilerin mükemmelliğine bak Kaptan!`);
+            showToast(`🎉 İNANILMAZ! Tam ${savedCount} öğrencinin netleri ve puanları sisteme başarıyla işlendi!`);
+            
+            // Eğer istatistik sekmesini yenileyen bir fonksiyon varsa onu tetikle
+            if(typeof renderStatsTab === 'function') renderStatsTab();
 
         } catch (error) {
             hideLoader();
             console.error(error);
-            alert('❌ Dosya okunurken bir hata oluştu. Excel dosyanızın bozuk olmadığından emin olun.');
+            alert('❌ Veriler işlenirken hata oluştu.');
         }
     };
 
     reader.readAsArrayBuffer(file);
 }
-
 
   // --- VİZYON 8.0: EXCEL VE MİSAFİR ÖĞRENCİ KARNE MOTORU ---
 function showExternalExamModal() {
