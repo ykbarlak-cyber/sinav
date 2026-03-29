@@ -1792,61 +1792,31 @@ if (myModal) {
     reader.readAsArrayBuffer(file);
 }
  // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
-// --- VİZYON 24.0: SIFIR HATA (AHTAPOT VERİ MOTORU) VE TAM KAPASİTELİ EĞİTİM KOÇLUĞU ---
+// --- VİZYON 25.0: VERİTABANI KORUMALI, KUSURSUZ GÖRÜNÜM MATBAASI ---
 
-// 1. AHTAPOT VERİ ÇEKİCİ: Excel'deki tüm varyasyonları (fiz, kim, tar, geo vb.) bulur, toplar, asla 0 bırakmaz.
-function ahtapotBul(obj, dersKelimeleri, tipKelimeleri) {
-    let toplam = 0;
-    const keys = Object.keys(obj);
-    for (let k of keys) {
-        let val = parseFloat(obj[k]);
-        if (isNaN(val)) continue;
-        
-        // Türkçe karakterleri ve boşlukları temizle
-        let cleanK = k.toLowerCase().replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c').replace(/[^a-z]/g,'');
-        
-        let dersUyuyor = dersKelimeleri.some(d => cleanK.includes(d));
-        let tipUyuyor = tipKelimeleri.some(t => cleanK.endsWith(t) || cleanK.includes(t));
-        
-        if (dersUyuyor && tipUyuyor) {
-            toplam += val;
-        }
-    }
-    return toplam;
-}
-
-// Tüm dersleri ve alt dallarını toparlayan ana fonksiyon
+// Sadece var olan veriyi çeker, yoksa 0 döner.
 function getNetDYN(s) {
-    const dTip = ['d', 'dogru', 'dog'];
-    const yTip = ['y', 'yanlis', 'yan'];
-    const nTip = ['n', 'net'];
-
-    let tD = ahtapotBul(s, ['turk', 'trk'], dTip);
-    let tY = ahtapotBul(s, ['turk', 'trk'], yTip);
-    let tN = ahtapotBul(s, ['turk', 'trk'], nTip);
-
-    let mD = ahtapotBul(s, ['mat', 'geo'], dTip);
-    let mY = ahtapotBul(s, ['mat', 'geo'], yTip);
-    let mN = ahtapotBul(s, ['mat', 'geo'], nTip);
-
-    let fD = ahtapotBul(s, ['fen', 'fiz', 'kim', 'biy'], dTip);
-    let fY = ahtapotBul(s, ['fen', 'fiz', 'kim', 'biy'], yTip);
-    let fN = ahtapotBul(s, ['fen', 'fiz', 'kim', 'biy'], nTip);
-
-    let sD = ahtapotBul(s, ['sos', 'tar', 'cog', 'fel', 'din'], dTip);
-    let sY = ahtapotBul(s, ['sos', 'tar', 'cog', 'fel', 'din'], yTip);
-    let sN = ahtapotBul(s, ['sos', 'tar', 'cog', 'fel', 'din'], nTip);
-
-    return { tD, tY, tN, mD, mY, mN, fD, fY, fN, sD, sY, sN };
+    let tN=0, mN=0, fN=0, sN=0, tD=0, mD=0, fD=0, sD=0, tY=0, mY=0, fY=0, sY=0;
+    const keys = Object.keys(s);
+    keys.forEach(k => {
+        let clean = k.toLowerCase().replace(/[^a-z]/g,'');
+        let val = parseFloat(s[k]);
+        if(isNaN(val)) return;
+        if(clean.includes('turk')&&clean.endsWith('n')) tN = val;
+        if(clean.includes('mat')&&clean.endsWith('n')) mN = val;
+        if(clean.includes('fen')&&clean.endsWith('n')) fN = val;
+        if(clean.includes('sos')&&clean.endsWith('n')) sN = val;
+    });
+    return { tN, mN, fN, sN, tD, mD, fD, sD, tY, mY, fY, sY };
 }
 
 async function showAllExamResults() {
     const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
-    showLoader('ÖSYM Ahtapot Veri Motoru Çalışıyor...');
+    showLoader('Karneler Hazırlanıyor...');
     try {
         const res = await sbFetch(`quiz_results?class_id=eq.${currentC}&order=score.desc`);
         hideLoader();
-        if (!res || res.length === 0) return alert('⚠️ Sınav verisi bulunamadı.');
+        if (!res || res.length === 0) return alert('⚠️ Veri bulunamadı.');
 
         let groupedResults = {};
         res.forEach(item => {
@@ -1860,163 +1830,134 @@ async function showAllExamResults() {
 
         let html = `
         <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.98); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:'Segoe UI', sans-serif;">
-            <div style="width:100%; max-width:1150px; background:#fff; border-radius:24px; padding:40px; max-height:92vh; overflow-y:auto; box-shadow:0 30px 60px rgba(0,0,0,0.6); border-top:12px solid #0f172a;">
+            <div style="width:100%; max-width:1050px; background:#fff; border-radius:24px; padding:40px; max-height:92vh; overflow-y:auto; box-shadow:0 30px 60px rgba(0,0,0,0.6); border-top:10px solid #0f172a;">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:20px; margin-bottom:25px;">
-                    <div>
-                        <h2 style="margin:0; color:#0f172a; font-size:30px; font-weight:900;">🎯 ÖSYM Sınav Analiz ve Strateji Merkezi</h2>
-                        <p style="margin:5px 0 0; color:#475569; font-size:15px;">Türkiye Geneli Tahmini Veriler ve Tam Kapasiteli Koçluk</p>
-                    </div>
-                    <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#e2e8f0; color:#334155; border:none; padding:12px 25px; border-radius:12px; cursor:pointer; font-weight:900; transition:0.2s;" onmouseover="this.style.background='#cbd5e1'">PANELİ KAPAT</button>
+                    <div><h2 style="margin:0; color:#0f172a; font-size:28px;">🎯 ÖSYM Karne Merkezi</h2></div>
+                    <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#e2e8f0; color:#334155; border:none; padding:12px 25px; border-radius:12px; cursor:pointer; font-weight:900;">KAPAT</button>
                 </div>`;
 
         for (const [examName, students] of Object.entries(groupedResults)) {
             const trAvg = 212.45;
             html += `
-                <div style="background:#f8fafc; padding:25px; border-radius:16px; margin-top:30px; border:1px solid #cbd5e1;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <div>
-                            <h3 style="margin:0; color:#0f172a; font-size:22px;">📌 ${examName}</h3>
-                            <span style="display:inline-block; margin-top:8px; background:#e0e7ff; color:#3730a3; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:bold;">🇹🇷 Türkiye Geneli Tahmini Ort: ${trAvg} Puan</span>
-                        </div>
-                        <button onclick="printBulkKarneler('${examName}')" style="background:#0f172a; color:white; border:none; padding:12px 24px; border-radius:10px; cursor:pointer; font-weight:900;">🖨️ TOPLU ÖSYM RAPORU</button>
+                <div style="background:#f8fafc; padding:20px; border-radius:16px; margin-bottom:25px; border:1px solid #cbd5e1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="margin:0;">📌 ${examName} <small style="color:#2563eb;">(TR Ort: ${trAvg})</small></h3>
+                        <button onclick="printBulkKarneler('${examName}')" style="background:#0f172a; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">🖨️ TOPLU YAZDIR</button>
                     </div>
-                    <div style="overflow-x:auto; border-radius:12px; border:1px solid #e2e8f0;">
-                        <table style="width:100%; border-collapse:collapse; background:white;">
-                            <tr style="background:#f1f5f9;">
-                                <th style="padding:16px; text-align:left; color:#475569; font-size:13px; font-weight:900;">ÖĞRENCİ</th>
-                                <th style="padding:16px; text-align:center; color:#475569; font-size:13px; font-weight:900;">PUAN</th>
-                                <th style="padding:16px; text-align:center; color:#475569; font-size:13px; font-weight:900;">TÜRKİYE GENELİ DURUMU</th>
-                                <th style="padding:16px; text-align:center; color:#475569; font-size:13px; font-weight:900;">İŞLEM</th>
-                            </tr>`;
+                    <table style="width:100%; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden;">
+                        <tr style="background:#f1f5f9;"><th style="padding:15px; text-align:left;">ÖĞRENCİ</th><th style="padding:15px;">PUAN</th><th style="padding:15px;">İŞLEM</th></tr>`;
             students.forEach((s) => {
-                const isAbove = parseFloat(s.score) >= trAvg;
                 html += `
-                            <tr style="border-bottom:1px solid #f1f5f9; transition:0.2s;" onmouseover="this.style.background='#fcfcfd'">
-                                <td style="padding:16px; font-weight:900; color:#0f172a; font-size:15px;">${s.student_name}</td>
-                                <td style="padding:16px; text-align:center; color:#2563eb; font-weight:900; font-size:20px;">${s.score}</td>
-                                <td style="padding:16px; text-align:center;">
-                                    <span style="background:${isAbove ? '#dcfce7':'#fee2e2'}; color:${isAbove ? '#166534':'#991b1b'}; padding:6px 16px; border-radius:20px; font-size:12px; font-weight:900;">
-                                        ${isAbove ? '🌟 BARAJ ÜSTÜ' : '⚠️ RİSKLİ BÖLGE'}
-                                    </span>
-                                </td>
-                                <td style="padding:16px; text-align:center;">
-                                    <button onclick="generateOsymPDF('${examName}', ${JSON.stringify(s).replace(/"/g, '&quot;')}, ${trAvg})" style="background:#2563eb; color:white; border:none; padding:10px 18px; border-radius:8px; cursor:pointer; font-weight:900; font-size:12px;">TAM KAPASİTE RAPOR</button>
-                                </td>
-                            </tr>`;
+                        <tr style="border-bottom:1px solid #f1f5f9;">
+                            <td style="padding:15px; font-weight:bold;">${s.student_name}</td>
+                            <td style="padding:15px; text-align:center; color:#2563eb; font-weight:900;">${s.score}</td>
+                            <td style="padding:15px; text-align:center;"><button onclick="generateOsymPDF('${examName}', ${JSON.stringify(s).replace(/"/g, '&quot;')}, ${trAvg})" style="background:#2563eb; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">KARNE ÇIKAR</button></td>
+                        </tr>`;
             });
-            html += `</table></div></div>`;
+            html += `</table></div>`;
         }
         html += `</div></div>`;
         document.body.insertAdjacentHTML('beforeend', html);
     } catch (e) { hideLoader(); console.error(e); }
 }
 
-// 2. TAM KAPASİTELİ YAPAY ZEKA KOÇLUK JENERATÖRÜ
-function generateMassiveCoaching(score, trAvg, d) {
-    const dersler = [
-        { ad: 'Türkçe', net: d.tN },
-        { ad: 'Matematik', net: d.mN },
-        { ad: 'Fen Bilimleri', net: d.fN },
-        { ad: 'Sosyal Bilgiler', net: d.sN }
-    ].sort((a,b) => a.net - b.net);
-
-    const zDers = dersler[0].ad;
-    const gDers = dersler[3].ad;
-    
-    let teshis = ""; let kirilim = ""; let program = "";
-
+// Güvenli Koçluk: Sadece Genel Puan/Net üzerinden konuşur, branş sallamaz!
+function getSafeCoaching(score, trAvg) {
     if (score >= 350) {
-        teshis = `Sonuçların, Türkiye geneli akademik sıralamalarda en üst %5'lik elit dilimde yer aldığını doğrulamaktadır. Sınavın genel stres yönetimi ve zaman optimizasyonu konusunda belirli bir olgunluğa eriştiğin görülüyor. Ancak bu seviyede hedefin 'sınavı geçmek' değil, 'derece yapmak' olmalıdır. Türkiye geneli ortalamasının çok üzerinde olman seni rehavete sürüklememeli; çünkü zirvede rekabet, bilgi üzerinden değil 'hata payı' üzerinden yapılır.`;
-        kirilim = `Verilerin derinlemesine incelendiğinde, ${gDers} branşındaki hakimiyetin sana büyük avantaj sağlarken, ${zDers} dersindeki göreceli puan kaybın senin 'Aşil Topuğun' durumundadır. Bu seviyedeki bir öğrencinin ${zDers} branşında yaşadığı net kaybı genellikle 'bilgi eksikliğinden' değil, 'dikkat yönetimi' veya 'zaman baskısı altında işlem hatası' yapmaktan kaynaklanır.`;
-        program = `Taktiksel Çalışma Planı:\n• Pazartesi-Çarşamba: ${zDers} dersinden tamamen 'Yeni Nesil / 3. Seviye Zorluk' kaynaklardan 50'şer adet soru çözümü ve süre tutarak hız antrenmanı.\n• Cuma: 135 dakikalık tam kapsamlı, kesintisiz Türkiye Geneli Denemesi (Maskeli ve gürültülü sınav provası).\n• Cumartesi: Denemede yanlış yapılan soruların video analizlerinin tek tek çıkarılması ve 'Hata Defteri'ne yazılması.\n• Pazar: ${gDers} dersinden refleksleri taze tutmak adına 1 adet branş denemesi.`;
+        return {
+            teshis: "Bu sınavdaki genel performansın, Türkiye geneli sıralamalarda en üst %5'lik elit dilimde yer aldığını doğrulamaktadır. Akademik altyapın ve temel kavramlara hakimiyetin son derece sağlam. Ancak bu seviyede belirleyici olan zor sorular değil, kolay sorularda yapılan işlem veya dikkat hatalarıdır.",
+            kirilim: "Puan avantajın yüksek olsa da, sınav anı stresi veya zamanı yönetememe gibi faktörler potansiyelini perdeleyebilir. Branş bazlı eksiklerini kişisel olarak tespit edip onlara nokta atışı müdahale etmelisin.",
+            program: "• Pazartesi-Cuma: Her gün süre tutarak 1 adet branş denemesi (Rastgele bir dersten).\n• Cumartesi: 135 dakikalık tam kapsamlı Türkiye Geneli Denemesi çözümü.\n• Pazar: Denemede yanlış yapılan soruların video çözümlerinin izlenmesi ve analiz edilmesi."
+        };
     } else if (score >= trAvg) {
-        teshis = `Sınav sonuçların, Türkiye geneli barajını aştığını ve ortalamanın üzerinde bir performans sergilediğini gösteriyor. Belirli derslerde temel bilgi birikimine sahipsin. Ancak bu puan skalası, seni garanti olarak istediğin bölüme veya sıraya yerleştirmez; sadece 'yarışın içinde' tutar. Potansiyelinin tamamını sahaya yansıtamadığın ve çalışma verimliliğinde bazı dalgalanmalar yaşadığın rakamlardan açıkça okunabiliyor.`;
-        kirilim = `${gDers} dersi seni ayakta tutan ana kolon olmuş. Buna karşılık ${zDers} dersindeki net düşüklüğün, genel puanını adeta bir pranga gibi aşağı çekiyor. ${zDers} branşını bu seviyede bırakarak diğer derslere yüklenmek, kırık bir bacakla maraton koşmaya benzer. Bu alandaki temel konu eksiklerini tespit edip acilen kapatmadan, genel net sayında o hayalini kurduğun büyük sıçramayı yaşayamazsın.`;
-        program = `Taktiksel Çalışma Planı:\n• Pazartesi-Salı: Sadece ${zDers} dersine odaklan. En çok hata yaptığın 2 konunun temel anlatım videolarını baştan izle ve konu özetlerini kendi cümlelerinle kağıda dök.\n• Çarşamba-Perşembe: İzlediğin ${zDers} konularından günde 80 adet 'Kavrama ve Uygulama' seviyesi soru çözerek konuyu sabitle.\n• Cuma: ${gDers} dersinden 1 adet branş denemesi çöz ve moral tazele.\n• Hafta Sonu: Mutlaka 1 adet Genel Deneme çöz ve sonrasında en az 2 saat boyunca 'Nerede yavaşladım, nerede tıkandım?' analizi yap.`;
+        return {
+            teshis: "Sonuçların Türkiye geneli ortalamasının üzerinde. Belirli konularda temel bilgi birikimine sahipsin ancak potansiyelinin tamamını skora yansıtamadığın açıkça görülüyor. Puanın seni yarışta tutar ancak garanti bir başarı sağlamaz.",
+            kirilim: "Zaman yönetimi veya belirli konulardaki 'yarım bilgiler' seni aşağı çekiyor. Netlerini sıçratmak için deneme çözmekten ziyade, en çok yanlış yaptığın alanları bulup o konunun teorisine inmen gerekiyor.",
+            program: "• Hafta İçi: En zayıf olduğunu bildiğin 2 dersi seçip, günde 2 saat konu anlatım videosu izle.\n• Konu sonraları: İzlediğin konularla ilgili mutlaka 50'şer kavrama testi çöz.\n• Hafta Sonu: Sadece 1 adet Genel Deneme çöz ve hata analizi yap."
+        };
     } else {
-        teshis = `Açık ve net bir akademik gerçekle yüzleşmemiz gerekiyor: Mevcut puanın ve netlerin, ÖSYM standartlarının ve hedeflediğin sıralamanın çok uzağında. Bu tablo, 'birkaç dikkatsizlik' veya 'sınav stresi' ile açıklanamaz. Çalışma disiplininde, konuyu algılama metodunda veya doğrudan sınav stratejinde köklü bir sorun var. Bu sonucu bir moral bozukluğu olarak değil, sistemini baştan inşa etmen için çalan 'Acil Durum Çanı' olarak görmelisin.`;
-        kirilim = `Tüm branşlarda genel bir düşüş trendi görülse de, özellikle ${zDers} dersindeki tablon, bu derse dair temel kavramların dahi henüz oturmadığını kanıtlıyor. Konu temelin eksikken sürekli deneme çözmek veya zor sorularla boğuşmak sana sadece zaman kaybettirir ve özgüvenini yıkar. Bilgiyi inşa etmeden test çözme lüksün şu an için bulunmuyor.`;
-        program = `Taktiksel Çalışma Planı:\n• Acil Eylem: Tüm genel denemeleri ve branş denemelerini bir sonraki aya kadar kaldır.\n• Pazartesi - Perşembe: ${zDers} dersinin en temel, 0'dan başlayan konu anlatım fasiküllerine/videolarına geri dön. Günde en az 3 saat sadece konu oku, izle ve not al.\n• Cuma - Cumartesi: Çalıştığın konulardan tamamen 'Kolay ve Kavrama' düzeyinde, zorlayıcı olmayan testlerden günde 100 soru çözerek temel at.\n• Pazar: Tamamen dijital detoks yap; telefon ve sosyal medyadan uzak durup zihnini dinlendir, pazartesi günkü yoğun tempoya hazırlan.`;
+        return {
+            teshis: "Gerçeklerle yüzleşme vakti: Mevcut puanın ÖSYM standartlarının ve hedeflediğin barajların oldukça gerisinde. Bu durum, akademik temelinde ve sınav stratejinde ciddi boşluklar olduğunu kanıtlıyor.",
+            kirilim: "Şu aşamada sürekli deneme çözmek, karmaşık sorularla vakit kaybetmek yapılabilecek en büyük hatadır. Temel kavramlar oturmadan bina inşa edilemez. Hızdan ziyade doğru bilgiye ihtiyacın var.",
+            program: "• Acil Eylem: Tüm denemeleri ve zor kaynakları bir kenara bırak.\n• Hafta İçi: Sadece konu anlatımlı fasiküllere ve sıfırdan eğitim videolarına odaklan.\n• Hafta Sonu: Çalıştığın konulardan sadece 'Temel Seviye' sorular çözerek özgüvenini ve bilgi temelini inşa et."
+        };
     }
-    
-    return { teshis, kirilim, program };
 }
 
-// 3. EKSİKSİZ, DEVASA PDF DÖKÜM MATBAASI
 function generateOsymPDF(exam, s, trAvg) {
     const d = getNetDYN(s);
-    const totalNet = parseFloat(s.correct) || (d.tN + d.mN + d.fN + d.sN);
     const scoreVal = parseFloat(s.score) || 0;
+    const totalNet = parseFloat(s.correct) || 0;
     
-    const adv = generateMassiveCoaching(scoreVal, trAvg, d);
+    // Veritabanında ders detayı var mı kontrolü
+    const hasDetails = (d.tN + d.mN + d.fN + d.sN) > 0;
+    
+    const adv = getSafeCoaching(scoreVal, trAvg);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ykbarlak-cyber.github.io`;
+
+    let tabloHtml = "";
+    
+    // EĞER VERİ YOKSA SIFIR ÇİZME! GÜZEL BİR ÖZET ÇİZ.
+    if (!hasDetails) {
+        tabloHtml = `
+        <div style="background:#f1f5f9; padding:30px; border-radius:16px; display:flex; justify-content:space-around; align-items:center; border:2px dashed #cbd5e1; margin-bottom:30px;">
+            <div style="text-align:center;">
+                <div style="color:#475569; font-size:14px; font-weight:900; margin-bottom:10px; text-transform:uppercase;">Genel Toplam Net</div>
+                <div style="color:#0f172a; font-size:48px; font-weight:900;">${totalNet}</div>
+            </div>
+            <div style="width:2px; height:80px; background:#cbd5e1;"></div>
+            <div style="text-align:center;">
+                <div style="color:#475569; font-size:14px; font-weight:900; margin-bottom:10px; text-transform:uppercase;">Akademik Durum</div>
+                <div style="color:${scoreVal >= trAvg ? '#10b981' : '#dc2626'}; font-size:32px; font-weight:900;">${scoreVal >= trAvg ? 'BARAJ ÜSTÜ' : 'GELİŞTİRİLMELİ'}</div>
+            </div>
+        </div>`;
+    } else {
+        // Eğer bir gün veritabanına eklenirse diye hazır kod (şu an çalışmayacak)
+        tabloHtml = `
+        <table style="width:100%; border-collapse:collapse; margin-bottom:30px;">
+            <thead><tr><th style="background:#0f172a; color:#fff; padding:12px; font-size:12px; text-align:left; padding-left:20px;">DERS</th><th style="background:#0f172a; color:#fff; padding:12px;">NET</th></tr></thead>
+            <tbody>
+                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Türkçe</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${d.tN}</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Matematik</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${d.mN}</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Fen Bilimleri</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${d.fN}</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Sosyal Bilgiler</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${d.sN}</td></tr>
+            </tbody>
+        </table>`;
+    }
 
     const w = window.open('', '_blank');
     const html = `
-    <html><head><title>${s.student_name} - ÖSYM Raporu</title><style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fff; padding: 0; margin: 0; color: #0f172a; }
-        .page { width: 210mm; min-height: 297mm; padding: 15mm 20mm; margin: auto; box-sizing: border-box; border: 12px solid #f8fafc; border-top: 18px solid #0f172a; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 20px; }
-        .puan-kutu { background: #0f172a; color: #fff; padding: 15px 30px; border-radius: 12px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .student-info { background: #f8fafc; padding: 15px 25px; border-radius: 12px; font-size: 16px; margin-bottom: 25px; border: 1px solid #cbd5e1; display:flex; justify-content:space-between;}
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { background: #0f172a; color: #fff; padding: 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align:center;}
-        td { padding: 14px; border-bottom: 1px solid #e2e8f0; font-weight: 700; text-align: center; font-size: 15px; }
-        .bar-bg { background: #e2e8f0; height: 8px; border-radius: 4px; width: 100%; display: inline-block; overflow: hidden; }
-        .bar-fill { background: #2563eb; height: 100%; }
-        
-        .koc-kutu { margin-top: 30px; }
-        .koc-title { font-weight: 900; color: #0f172a; font-size: 18px; border-bottom: 3px solid #2563eb; padding-bottom: 8px; margin-bottom: 15px; display:inline-block; text-transform:uppercase;}
-        .koc-section { background: #f8fafc; padding: 18px 22px; border-radius: 12px; border-left: 6px solid #2563eb; margin-bottom: 15px; font-size: 13px; line-height: 1.7; text-align: justify;}
-        .koc-task { background: #eff6ff; padding: 20px; border-radius: 12px; border: 1px solid #bfdbfe; font-size: 13.5px; line-height: 1.7; font-weight:600; color:#1e40af;}
-        
-        .footer { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 2px solid #e2e8f0; padding-top: 15px; }
+    <html><head><style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; padding: 0; margin: 0; color: #0f172a; }
+        .page { width: 210mm; min-height: 297mm; padding: 20mm; margin: auto; box-sizing: border-box; border: 12px solid #f8fafc; border-top: 18px solid #0f172a; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 25px; }
+        .puan-kutu { background: #0f172a; color: #fff; padding: 15px 30px; border-radius: 12px; text-align: center; }
+        .koc-section { background: #f8fafc; padding: 20px 25px; border-radius: 12px; border-left: 6px solid #2563eb; margin-bottom: 20px; font-size: 14px; line-height: 1.6; text-align: justify;}
+        .koc-task { background: #eff6ff; padding: 20px 25px; border-radius: 12px; border: 1px solid #bfdbfe; font-size: 14px; line-height: 1.7; font-weight:600; color:#1e40af;}
     </style></head><body>
         <div class="page">
             <div class="header">
-                <div><h1 style="margin:0; font-size:32px; font-weight:900; color:#0f172a; letter-spacing:-1px;">AKADEMİK ANALİZ & YOL HARİTASI</h1><p style="color:#2563eb; font-weight:800; margin:8px 0 0 0; font-size:16px;">${exam}</p></div>
-                <div class="puan-kutu"><small style="letter-spacing:1px; opacity:0.8;">GENEL PUAN</small><div style="font-size:40px; font-weight:900; margin-top:2px;">${scoreVal}</div></div>
+                <div><h1 style="margin:0; font-size:32px; font-weight:900;">AKADEMİK ANALİZ RAPORU</h1><p style="color:#2563eb; font-weight:800; margin:5px 0 0 0;">${exam}</p></div>
+                <div class="puan-kutu"><small style="letter-spacing:1px; opacity:0.8;">GENEL PUAN</small><div style="font-size:40px; font-weight:900;">${scoreVal}</div></div>
             </div>
             
-            <div class="student-info">
+            <div style="background:#f8fafc; padding:15px 25px; border-radius:12px; font-size:16px; margin-bottom:25px; border:1px solid #cbd5e1; display:flex; justify-content:space-between;">
                 <div>👤 <b>ÖĞRENCİ:</b> <span style="color:#2563eb; font-weight:900;">${s.student_name}</span></div>
                 <div>🇹🇷 <b>Türkiye Geneli Ort:</b> <span style="font-weight:900;">${trAvg}</span></div>
             </div>
             
-            <table>
-                <thead><tr><th style="text-align:left; padding-left:20px;">DERS BAZLI GELİŞİM</th><th>DOĞRU</th><th>YANLIŞ</th><th>NET</th><th style="width:20%;">BAŞARI ORANI</th></tr></thead>
-                <tbody>
-                    <tr><td style="text-align:left; padding-left:20px;">Türkçe</td><td>${d.tD}</td><td>${d.tY}</td><td style="color:#10b981; font-size:18px;">${d.tN}</td><td><div class="bar-bg"><div class="bar-fill" style="width:${(d.tN/40)*100}%"></div></div></td></tr>
-                    <tr><td style="text-align:left; padding-left:20px;">Matematik</td><td>${d.mD}</td><td>${d.mY}</td><td style="color:#10b981; font-size:18px;">${d.mN}</td><td><div class="bar-bg"><div class="bar-fill" style="width:${(d.mN/40)*100}%"></div></div></td></tr>
-                    <tr><td style="text-align:left; padding-left:20px;">Fen Bilimleri</td><td>${d.fD}</td><td>${d.fY}</td><td style="color:#10b981; font-size:18px;">${d.fN}</td><td><div class="bar-bg"><div class="bar-fill" style="width:${(d.fN/20)*100}%"></div></div></td></tr>
-                    <tr><td style="text-align:left; padding-left:20px;">Sosyal Bilgiler</td><td>${d.sD}</td><td>${d.sY}</td><td style="color:#10b981; font-size:18px;">${d.sN}</td><td><div class="bar-bg"><div class="bar-fill" style="width:${(d.sN/20)*100}%"></div></div></td></tr>
-                    <tr style="background:#f1f5f9;"><td style="text-align:left; padding-left:20px;"><b>GENEL TOPLAM</b></td><td>-</td><td>-</td><td style="color:#0f172a; font-size:24px; font-weight:900;">${totalNet}</td><td>%${((totalNet/120)*100).toFixed(1)}</td></tr>
-                </tbody>
-            </table>
+            ${tabloHtml}
 
-            <div class="koc-kutu">
-                <div class="koc-title">🧠 Yapay Zeka Stratejik Eğitim Koçluğu (Full Kapasite)</div>
-                
-                <div class="koc-section">
-                    <b style="color:#0f172a; font-size:14px; margin-bottom:5px; display:block;">1. Derin Akademik Teşhis:</b>
-                    ${adv.teshis}
-                </div>
-                
-                <div class="koc-section" style="border-left-color:#b91c1c;">
-                    <b style="color:#b91c1c; font-size:14px; margin-bottom:5px; display:block;">2. Kritik Kırılım ve Zayıf Halka Analizi:</b>
-                    ${adv.kirilim}
-                </div>
-                
-                <div class="koc-task">
-                    <b style="color:#1d4ed8; font-size:15px; display:block; margin-bottom:10px;">🚀 7 Günlük Tam Kapasite Çalışma ve İyileştirme Programı:</b>
-                    <pre style="font-family:inherit; white-space:pre-wrap; font-size:13.5px; line-height:1.8;">${adv.program}</pre>
-                </div>
+            <div>
+                <h3 style="color:#0f172a; border-bottom:3px solid #2563eb; padding-bottom:10px; display:inline-block;">🧠 Yapay Zeka Stratejik Eğitim Koçluğu</h3>
+                <div class="koc-section"><b>1. Derin Akademik Teşhis:</b><br>${adv.teshis}</div>
+                <div class="koc-section" style="border-left-color:#dc2626;"><b>2. Kritik Kırılım Analizi:</b><br>${adv.kirilim}</div>
+                <div class="koc-task"><b style="color:#1d4ed8; font-size:16px; margin-bottom:10px; display:block;">🚀 7 Günlük Görev Programı:</b><pre style="font-family:inherit; white-space:pre-wrap; margin:0;">${adv.program}</pre></div>
             </div>
             
-            <div class="footer">
-                <div style="font-size:10px; color:#64748b; max-width:450px; line-height:1.6;">Bu resmi evrak; ÖSYM tabanlı veri algoritmaları ve kişiselleştirilmiş eğitim koçluğu yapay zeka entegrasyonu ile oluşturulmuştur. Başarı bir şans değil, stratejik bir süreç yönetimidir.</div>
-                <div style="text-align:center;"><img src="${qrUrl}" width="75"><br><small style="color:#0f172a; font-size:10px; font-weight:900; letter-spacing:1px; margin-top:5px; display:block;">SİSTEMİ ONAYLA</small></div>
+            <div style="margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 2px solid #e2e8f0; padding-top: 15px;">
+                <div style="font-size:10px; color:#64748b; max-width:450px;">Bu resmi evrak; ÖSYM tabanlı veri algoritmaları kullanılarak üretilmiştir. Başarı stratejik bir süreç yönetimidir.</div>
+                <div style="text-align:center;"><img src="${qrUrl}" width="80"><br><small style="color:#0f172a; font-size:10px; font-weight:900; margin-top:5px; display:block;">DİJİTAL ONAY</small></div>
             </div>
         </div>
     </body></html>`;
@@ -2031,29 +1972,17 @@ function printBulkKarneler(examName) {
     const w = window.open('', '_blank');
     let h = '<html><head><style>body{margin:0;font-family:sans-serif;background:#f1f5f9;}.p-break{page-break-after:always;padding:40px;display:flex;justify-content:center;}</style></head><body>';
     sts.forEach(s => {
-        const d = getNetDYN(s);
-        const adv = generateMassiveCoaching(parseFloat(s.score)||0, trAvg, d);
-        
-        h += `<div class="p-break"><div style="width:750px; background:#fff; border:1px solid #e2e8f0; padding:45px; border-radius:20px; border-top:15px solid #0f172a; box-shadow:0 15px 35px rgba(0,0,0,0.05);">
-            <h2 style="text-align:center; color:#0f172a; margin-top:0; font-size:28px; font-weight:900;">ÖSYM AKADEMİK YOL HARİTASI</h2>
-            <div style="text-align:center; color:#475569; margin-bottom:30px; font-weight:bold; font-size:16px;">${examName}</div>
-            
-            <div style="display:flex; justify-content:space-between; padding:20px; background:#f8fafc; border-radius:12px; margin-bottom:30px; border:1px solid #e2e8f0;">
-                <span style="font-weight:900; font-size:18px; color:#0f172a;">👤 ${s.student_name}</span>
-                <span style="font-weight:900; color:#2563eb; font-size:18px;">🏆 Puan: ${s.score}</span>
+        const adv = getSafeCoaching(parseFloat(s.score)||0, trAvg);
+        h += `<div class="p-break"><div style="width:750px; background:#fff; border:1px solid #e2e8f0; padding:40px; border-radius:20px; border-top:15px solid #0f172a;">
+            <h2 style="text-align:center; color:#0f172a; margin-top:0; font-size:26px; font-weight:900;">ÖSYM AKADEMİK YOL HARİTASI</h2>
+            <div style="text-align:center; color:#475569; margin-bottom:20px; font-weight:bold;">${examName}</div>
+            <div style="display:flex; justify-content:space-between; padding:15px; background:#f8fafc; border-radius:12px; margin-bottom:25px; border:1px solid #e2e8f0;">
+                <span style="font-weight:900; font-size:18px;">👤 ${s.student_name}</span><span style="font-weight:900; color:#2563eb; font-size:18px;">🏆 Puan: ${s.score}</span>
             </div>
-            
-            <div style="font-size:14px; line-height:1.7; color:#1e293b; text-align:justify;">
-                <div style="background:#f1f5f9; padding:15px; border-radius:10px; border-left:5px solid #2563eb; margin-bottom:15px;">
-                    <b style="color:#0f172a;">📌 Akademik Teşhis:</b><br>${adv.teshis}
-                </div>
-                <div style="background:#fef2f2; padding:15px; border-radius:10px; border-left:5px solid #dc2626; margin-bottom:15px;">
-                    <b style="color:#b91c1c;">⚠️ Zayıf Halka:</b><br>${adv.kirilim}
-                </div>
-                <div style="background:#eff6ff; padding:20px; border-radius:10px; border:1px solid #bfdbfe;">
-                    <b style="color:#1d4ed8; font-size:15px;">🚀 7 Günlük Görev Programı:</b><br>
-                    <pre style="font-family:inherit; margin-top:10px; white-space:pre-wrap; font-weight:600; color:#1e40af; font-size:13.5px;">${adv.program}</pre>
-                </div>
+            <div style="font-size:14px; line-height:1.6; color:#1e293b; text-align:justify;">
+                <div style="background:#f1f5f9; padding:15px; border-radius:10px; border-left:5px solid #2563eb; margin-bottom:15px;"><b style="color:#0f172a;">📌 Teşhis:</b><br>${adv.teshis}</div>
+                <div style="background:#fef2f2; padding:15px; border-radius:10px; border-left:5px solid #dc2626; margin-bottom:15px;"><b style="color:#b91c1c;">⚠️ Analiz:</b><br>${adv.kirilim}</div>
+                <div style="background:#eff6ff; padding:20px; border-radius:10px; border:1px solid #bfdbfe;"><b style="color:#1d4ed8;">🚀 Görevler:</b><br><pre style="font-family:inherit; margin-top:8px; white-space:pre-wrap; font-weight:600; color:#1e40af;">${adv.program}</pre></div>
             </div>
         </div></div>`;
     });
