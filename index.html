@@ -1722,7 +1722,8 @@ reader.onload = async function(e) {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, {type: 'array'});
         const firstSheet = workbook.SheetNames[0];
-        const excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {header: 1});
+        // DİKKAT: Senin orijinal koduna (header'sız) geri döndük!
+        const excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
 
         if (excelRows.length === 0) {
             hideLoader();
@@ -1733,8 +1734,7 @@ reader.onload = async function(e) {
         let savedCount = 0;
         const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
         
-        // 🔥 HATA BURADAYDI, DÜZELTİLDİ: students tablosundaki sütun adını "name" olarak güncelledik.
-        // Eğer Supabase'de sütun adın "full_name" ise, aşağıdaki "name" kelimelerini "full_name" yap!
+        // Kayıtlı Öğrencileri Çek
         showLoader('Kayıtlı öğrenciler taranıyor...');
         const kayitliOgrenciler = await sbFetch(`students?class_id=eq.${currentC}&select=id,name`);
         const ogrenciSozlugu = {};
@@ -1744,35 +1744,56 @@ reader.onload = async function(e) {
             });
         }
 
-        for (let i = 5; i < excelRows.length; i++) { 
+        // SENİN ORİJİNAL DÖNGÜN (i=3'ten başlar)
+        for (let i = 3; i < excelRows.length; i++) { 
             const row = excelRows[i];
-            if (!row || row.length < 30) continue;
-
-            let ogrenciAdi = row[4];
-            const tytPuani = row[42];
-            const toplamNet = row[41];
-
-            if (!ogrenciAdi || typeof ogrenciAdi !== 'string' || ogrenciAdi === 'ADI SOYADI' || isNaN(parseFloat(tytPuani))) continue;
             
-            ogrenciAdi = ogrenciAdi.trim().toUpperCase(); 
+            // Senin orijinal sütunların
+            let ogrenciAdi = row['__EMPTY_1'];
+            const tytPuani = row['__EMPTY_40'];
 
-            // Kayıtlıysa ID'yi al, yoksa null bırak
+            // İsim veya Puan yoksa o satırı atla
+            if (!ogrenciAdi || !tytPuani) continue;
+            
+            ogrenciAdi = String(ogrenciAdi).trim().toUpperCase(); 
             const matchedStudentId = ogrenciSozlugu[ogrenciAdi] || null;
 
+            // Senin orijinal Doğru/Yanlış/Net verilerin
+            const turkceNet = parseFloat(row['__EMPTY_6']) || 0;
+            const turkceY = parseFloat(row['__EMPTY_5']) || 0;
+            const turkceD = parseFloat(row['__EMPTY_4']) || 0;
+
+            const sosyalNet = parseFloat(row['__EMPTY_18']) || 0;
+            const sosyalY = parseFloat(row['__EMPTY_17']) || 0;
+            const sosyalD = parseFloat(row['__EMPTY_16']) || 0;
+
+            const matNet = parseFloat(row['__EMPTY_24']) || 0;
+            const matY = parseFloat(row['__EMPTY_23']) || 0;
+            const matD = parseFloat(row['__EMPTY_22']) || 0;
+
+            const fenNet = parseFloat(row['__EMPTY_33']) || 0;
+            const fenY = parseFloat(row['__EMPTY_32']) || 0;
+            const fenD = parseFloat(row['__EMPTY_31']) || 0;
+
+            const toplamNet = turkceNet + sosyalNet + matNet + fenNet;
+
+            // Matbaanın okuyacağı gizli paket
             const dersPaketi = {
-                tD: row[5]||0, tY: row[6]||0, tN: row[7]||0,
-                sD: (row[8]||0)+(row[11]||0)+(row[14]||0)+(row[17]||0), sY: (row[9]||0)+(row[12]||0)+(row[15]||0)+(row[18]||0), sN: (row[10]||0)+(row[13]||0)+(row[16]||0)+(row[19]||0),
-                mD: (row[22]||0)+(row[25]||0), mY: (row[23]||0)+(row[26]||0), mN: (row[24]||0)+(row[27]||0),
-                fD: (row[28]||0)+(row[31]||0)+(row[34]||0), fY: (row[29]||0)+(row[32]||0)+(row[35]||0), fN: (row[30]||0)+(row[33]||0)+(row[36]||0)
+                tD: turkceD, tY: turkceY, tN: turkceNet,
+                sD: sosyalD, sY: sosyalY, sN: sosyalNet,
+                mD: matD, mY: matY, mN: matNet,
+                fD: fenD, fY: fenY, fN: fenNet
             };
 
             const insertData = {
                 class_id: currentC,
                 student_name: ogrenciAdi,
                 student_id: matchedStudentId, 
-                score: parseFloat(tytPuani),
-                correct: parseFloat(toplamNet),
+                score: parseFloat(tytPuani).toFixed(2),
+                correct: Math.round(toplamNet),
                 wrong: 0, empty: 0,
+                // Eğer burada examName değişkeni hata verirse, quiz_title: "Deneme Sınavı" yazabilirsin
+                quiz_title: typeof examName !== 'undefined' ? (examName + " (Fiziki)") : "ÖSYM Deneme",
                 branch: JSON.stringify(dersPaketi) 
             };
 
