@@ -1792,15 +1792,15 @@ if (myModal) {
     reader.readAsArrayBuffer(file);
 }
  // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
-// --- VİZYON 15.0: ULTRA-STRATEJİK KURUMSAL ANALİZ VE AKILLI KOÇLUK SİSTEMİ ---
+// --- VİZYON 17.0: MÜKEMMEL ANALİTİK VE KİŞİSELLEŞTİRİLMİŞ HAFTALIK KOÇLUK SİSTEMİ ---
 
 async function showAllExamResults() {
     const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
-    showLoader('Kurumsal Veriler Analiz Ediliyor...');
+    showLoader('Kurumsal Veriler ve Analitik Dosyalar Hazırlanıyor...');
     try {
         const res = await sbFetch(`quiz_results?class_id=eq.${currentC}&order=score.desc`);
         hideLoader();
-        if (!res || res.length === 0) return alert('⚠️ Henüz veri girişi yapılmamış.');
+        if (!res || res.length === 0) return alert('⚠️ Veri bulunamadı.');
 
         let groupedResults = {};
         res.forEach(item => {
@@ -1813,48 +1813,35 @@ async function showAllExamResults() {
         window.currentExamData = groupedResults;
 
         let html = `
-        <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.96); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
+        <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.98); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
             <div style="width:100%; max-width:1000px; background:#fff; border-radius:24px; padding:35px; max-height:92vh; overflow-y:auto; box-shadow:0 30px 60px rgba(0,0,0,0.6); border-top:12px solid #1e1b4b;">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f1f5f9; padding-bottom:25px; margin-bottom:25px;">
-                    <div>
-                        <h2 style="margin:0; color:#1e1b4b; font-size:28px; letter-spacing:-0.5px;">🏛️ Kurumsal Analitik Panel</h2>
-                        <p style="margin:5px 0 0; color:#64748b; font-size:15px;">Yapay Zeka Destekli Haftalık Gelişim ve Koçluk Sistemi Aktif.</p>
-                    </div>
-                    <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#f1f5f9; color:#475569; border:none; padding:14px 28px; border-radius:14px; cursor:pointer; font-weight:bold; transition:0.2s;" onmouseover="this.style.background='#e2e8f0'">Paneli Kapat</button>
+                    <div><h2 style="margin:0; color:#1e1b4b; font-size:28px;">🏛️ Kurumsal Sınav Analiz Merkezi</h2></div>
+                    <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#f1f5f9; color:#475569; border:none; padding:12px 25px; border-radius:12px; cursor:pointer; font-weight:bold;">Paneli Kapat</button>
                 </div>`;
 
         for (const [examName, students] of Object.entries(groupedResults)) {
             const kurumAvg = (students.reduce((acc, s) => acc + parseFloat(s.score), 0) / students.length).toFixed(2);
             html += `
                 <div style="background:#f8fafc; padding:25px; border-radius:18px; margin-top:30px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <div>
-                            <h3 style="margin:0; color:#1e1b4b; font-size:20px;">📌 ${examName}</h3>
-                            <span style="display:inline-block; margin-top:8px; background:#e0e7ff; color:#4338ca; padding:4px 12px; border-radius:20px; font-size:13px; font-weight:bold;">🏛️ Kurum Genel Ortalaması: ${kurumAvg}</span>
-                        </div>
-                        <button onclick="printBulkKarneler('${examName}')" style="background:#1e1b4b; color:white; border:none; padding:12px 24px; border-radius:12px; cursor:pointer; font-weight:900; box-shadow:0 4px 12px rgba(30,27,75,0.2);">🖨️ TOPLU ANALİZ ÇIKAR</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="margin:0; color:#1e1b4b;">📌 ${examName} <small style="color:#6366f1;">(Kurum Ort: ${kurumAvg})</small></h3>
+                        <button onclick="printBulkKarneler('${examName}')" style="background:#1e1b4b; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">🖨️ Toplu Karne (Detaylı)</button>
                     </div>
                     <div style="overflow-x:auto;">
-                        <table style="width:100%; border-collapse:collapse; background:white; border-radius:12px; overflow:hidden;">
+                        <table style="width:100%; border-collapse:collapse; background:white; border-radius:12px;">
                             <tr style="background:#f1f5f9; text-align:left;">
-                                <th style="padding:15px; color:#475569; font-size:13px;">ÖĞRENCİ</th>
-                                <th style="padding:15px; color:#475569; font-size:13px; text-align:center;">PUAN</th>
-                                <th style="padding:15px; color:#475569; font-size:13px; text-align:center;">KURUM DURUMU</th>
-                                <th style="padding:15px; color:#475569; text-align:center;">EYLEM</th>
+                                <th style="padding:15px;">Öğrenci</th>
+                                <th style="padding:15px; text-align:center;">Puan</th>
+                                <th style="padding:15px; text-align:center;">İşlem</th>
                             </tr>`;
             students.forEach((s) => {
-                const isAbove = parseFloat(s.score) >= kurumAvg;
                 html += `
-                            <tr style="border-bottom:1px solid #f1f5f9; transition:0.2s;" onmouseover="this.style.background='#fcfcfd'">
-                                <td style="padding:15px; font-weight:bold; color:#1e1b4b;">${s.student_name}</td>
-                                <td style="padding:15px; text-align:center; color:#4338ca; font-weight:900; font-size:18px;">${s.score}</td>
+                            <tr style="border-bottom:1px solid #f1f5f9;">
+                                <td style="padding:15px; font-weight:bold;">${s.student_name}</td>
+                                <td style="padding:15px; text-align:center; color:#4338ca; font-weight:900;">${s.score}</td>
                                 <td style="padding:15px; text-align:center;">
-                                    <span style="background:${isAbove ? '#dcfce7':'#fee2e2'}; color:${isAbove ? '#15803d':'#b91c1c'}; padding:6px 14px; border-radius:25px; font-size:11px; font-weight:800; text-transform:uppercase;">
-                                        ${isAbove ? '✅ ORTALAMA ÜSTÜ' : '⚠️ GELİŞTİRİLMELİ'}
-                                    </span>
-                                </td>
-                                <td style="padding:15px; text-align:center;">
-                                    <button onclick="generateSuperPDF('${examName}', ${JSON.stringify(s).replace(/"/g, '&quot;')}, ${kurumAvg})" style="background:#4338ca; color:white; border:none; padding:10px 18px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:12px;">📊 ANALİZ ET</button>
+                                    <button onclick="generatePerfectPDF('${examName}', ${JSON.stringify(s).replace(/"/g, '&quot;')}, ${kurumAvg})" style="background:#4338ca; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">📊 Analiz Et</button>
                                 </td>
                             </tr>`;
             });
@@ -1865,102 +1852,84 @@ async function showAllExamResults() {
     } catch (e) { hideLoader(); console.error(e); }
 }
 
-// --- AKILLI VE GERÇEKÇİ KOÇLUK MOTORU ---
-function getAdvancedCoachAdvice(s, avg) {
-    const score = parseFloat(s.score);
-    const subjects = [
-        {n: 'Türkçe', net: parseFloat(s.turkce_n) || 0},
-        {n: 'Matematik', net: parseFloat(s.mat_n) || 0},
-        {n: 'Fen', net: parseFloat(s.fen_n) || 0},
-        {n: 'Sosyal', net: parseFloat(s.sos_n) || 0}
-    ].sort((a,b) => b.net - a.net);
+// --- MÜKEMMEL KİŞİSELLEŞTİRİLMİŞ KOÇLUK MOTORU ---
+function getPerfectAdvice(s, avg) {
+    const score = parseFloat(s.score) || 0;
+    // Ders Netlerini Çek (Küçük harf duyarlılığı eklendi)
+    const dersler = [
+        { isim: 'Türkçe', net: parseFloat(s.turkce_n || s.Turkce_n || 0) },
+        { isim: 'Matematik', net: parseFloat(s.mat_n || s.Mat_n || 0) },
+        { isim: 'Fen Bilimleri', net: parseFloat(s.fen_n || s.Fen_n || 0) },
+        { isim: 'Sosyal Bilgiler', net: parseFloat(s.sos_n || s.Sos_n || 0) }
+    ].sort((a,b) => a.net - b.net);
 
-    const best = subjects[0];
-    const worst = subjects[subjects.length - 1];
+    const enZayif = dersler[0];
+    const enGuclu = dersler[dersler.length - 1];
     
-    let report = { analysis: "", roadmap: "", weeklyTask: "" };
+    let analiz = "";
+    let yolHaritasi = "";
 
-    if (score >= avg + 40) {
-        report.analysis = `Mevcut veriler, akademik altyapının kurum standartlarının oldukça üzerinde olduğunu kanıtlıyor. Özellikle ${best.n} dersindeki hakimiyetin fark yaratıyor.`;
-        report.roadmap = "Sıralamanı korumak için 'Konu Eksikliği' aşamasını geçmiş kabul edilebilirsin. Artık stratejin 'Hata Analizi' olmalı.";
-        report.weeklyTask = `Bu hafta ${worst.n} dersinden sadece 'Yeni Nesil' sorulara odaklan ve her gün 1 adet branş denemesi çözerek reflekslerini geliştir.`;
+    if (score > avg + 40) {
+        analiz = `${s.student_name}, bu sınavda kurum genelinin oldukça üzerinde bir duruş sergiledin. Özellikle ${enGuclu.isim} alanındaki ${enGuclu.net} netlik başarın, akademik potansiyelini açıkça kanıtlıyor.`;
+        yolHaritasi = `Hedefin artık 'sınavı geçmek' değil, 'zirveyi sabitlemek' olmalı. ${enZayif.isim} dersindeki ufak pürüzleri giderirsen, önünde hiçbir engel kalmaz. Bu hafta zorluk seviyesi yüksek (Siyah seri) denemelere odaklan.`;
     } else if (score >= avg - 20) {
-        report.analysis = "Kurum ortalamasıyla dengeli bir çizgidesin. Ancak potansiyelinin bir kısmı henüz sonuca yansımamış görünüyor. Bilgi var, uygulama hızı eksik.";
-        report.roadmap = `${worst.n} dersindeki dalgalanma genel puanını aşağı çekiyor. Bu derse karşı olan önyargını kırman, puanını 30-40 basamak yukarı taşıyacaktır.`;
-        report.weeklyTask = `Haftalık planına ${worst.n} için ekstra 2 saat 'Temel Kavramlar' tekrarı ekle. Ayrıca ${best.n} dersinden hızlanmak için süre tutarak soru çöz.`;
+        analiz = "Kurum ortalamasıyla paralel bir sonuç aldın. Ancak görünen o ki, bildiğin konularda dahi süre baskısı veya dikkat dağınıklığı nedeniyle puan kayıpları yaşamışsın.";
+        yolHaritasi = `Özellikle ${enZayif.isim} dersindeki ${enZayif.net} net, senin gerçek potansiyelini aşağı çekiyor. Bu hafta ${enZayif.isim} temel kavramlarını tekrar etmeli ve günde en az 40 soru ile bu dersi desteklemelisin.`;
     } else {
-        report.analysis = "Sonuçlar, çalışma metodunda köklü bir değişikliğe ihtiyacın olduğunu gösteriyor. Kurum ortalamasının gerisinde kalman, temel konularda boşluklar olduğuna işaret ediyor.";
-        report.roadmap = "Moral bozmak zaman kaybıdır. Şu an odaklanman gereken tek şey 'Konu Tamamlama'. Karmaşık sorulardan önce temel mantığı oturtmalısın.";
-        report.weeklyTask = `Bu hafta sadece ${worst.n} ve ${subjects[2].n} derslerine odaklan. Her konudan sonra 50 adet kolay-orta seviye soru çözerek özgüvenini tazele.`;
+        analiz = "Sınav sonuçların, şu anki çalışma metodunun verimli olmadığını gösteriyor. Kurum ortalamasının gerisinde kalman, temel konularda ciddi boşluklar olduğunu işaret ediyor.";
+        yolHaritasi = `Moral bozmayı bırak ve strateji kur. En zayıf halkan olan ${enZayif.isim} dersinden konu anlatım videolarına sıfırdan başla. Bu hafta hedefin yüksek puan değil, eksik konu kapatmak olmalı.`;
     }
-    return report;
+
+    return { analiz, yolHaritasi, haftalık: `Bu hafta önceliğin ${enZayif.isim} olacak. Her gün bu dersten 1 branş denemesi ve ${enGuclu.isim} dersinden 20 adet zor soru çözümü yapmalısın.` };
 }
 
-// --- PREMIUM PDF MOTORU ---
-function generateSuperPDF(exam, s, avg) {
-    const report = getAdvancedCoachAdvice(s, avg);
+function generatePerfectPDF(exam, s, avg) {
+    const advice = getPerfectAdvice(s, avg);
     const w = window.open('', '_blank');
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin)}`;
     
-    const subjects = [
-        {n: 'Türkçe', d: s.turkce_d, y: s.turkce_y, net: s.turkce_n},
-        {n: 'Matematik', d: s.mat_d, y: s.mat_y, net: s.mat_n},
-        {n: 'Fen Bilimleri', d: s.fen_d, y: s.fen_y, net: s.fen_n},
-        {n: 'Sosyal Bilgiler', d: s.sos_d, y: s.sos_y, net: s.sos_n}
-    ];
-
-    let rows = "";
-    subjects.forEach(sub => {
-        const netVal = parseFloat(sub.net) || 0;
-        const barWidth = Math.min(Math.max(netVal * 5, 2), 100);
-        rows += `
-        <tr>
-            <td style="padding:14px; border-bottom:1px solid #f1f5f9;">
-                <div style="font-weight:bold; color:#1e1b4b; margin-bottom:4px;">${sub.n}</div>
-                <div style="background:#f1f5f9; height:6px; border-radius:10px; width:100%;">
-                    <div style="background:#4338ca; height:6px; border-radius:10px; width:${barWidth}%;"></div>
-                </div>
-            </td>
-            <td style="text-align:center; color:#64748b;">${sub.d || 0}</td>
-            <td style="text-align:center; color:#ef4444;">${sub.y || 0}</td>
-            <td style="text-align:center; font-weight:900; color:#1e1b4b;">${sub.net || 0}</td>
-        </tr>`;
-    });
-
     const html = `
     <html><head><style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fff; margin: 0; padding: 0; color: #1e293b; }
-        .container { width: 210mm; min-height: 297mm; margin: auto; padding: 25mm; box-sizing: border-box; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1e1b4b; padding-bottom: 25px; margin-bottom: 35px; }
-        .score-box { background: #1e1b4b; color: #fff; padding: 20px 35px; border-radius: 20px; text-align: center; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #fff; padding: 0; margin: 0; color: #1e293b; }
+        .page { width: 210mm; min-height: 297mm; padding: 20mm; margin: auto; box-sizing: border-box; }
+        .header { display: flex; justify-content: space-between; border-bottom: 4px solid #1e1b4b; padding-bottom: 20px; margin-bottom: 30px; }
+        .score-card { background: #1e1b4b; color: white; padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { text-align: left; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 10px; border-bottom: 2px solid #f1f5f9; }
-        .coach-card { background: #f8fafc; border-radius: 20px; padding: 25px; margin-top: 40px; border: 1px solid #e2e8f0; }
-        .footer { margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #f1f5f9; padding-top: 30px; }
-        @media print { .container { margin: 0; padding: 15mm; } }
+        th { background: #f1f5f9; color: #475569; padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-weight: bold; }
+        .advice-box { background: #f8fafc; border-radius: 15px; padding: 25px; margin-top: 35px; border: 1px solid #e2e8f0; position: relative; }
+        .footer { margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #eee; padding-top: 20px; }
+        .bar-container { background: #e2e8f0; height: 10px; border-radius: 5px; width: 100px; display: inline-block; margin-left: 10px; }
+        .bar-fill { background: #4338ca; height: 10px; border-radius: 5px; }
     </style></head><body>
-        <div class="container">
+        <div class="page">
             <div class="header">
-                <div><h1 style="margin:0; font-size:32px; color:#1e1b4b;">AKADEMİK ANALİZ RAPORU</h1><p style="margin:5px 0; color:#6366f1; font-weight:bold;">${exam}</p></div>
-                <div class="score-box"><small style="opacity:0.8; font-weight:bold;">GENEL PUAN</small><div style="font-size:42px; font-weight:800;">${s.score}</div></div>
+                <div><h1 style="margin:0; font-size:28px;">SINAV SONUÇ BELGESİ</h1><p style="color:#6366f1; font-weight:bold; margin:5px 0;">${exam}</p></div>
+                <div class="score-card"><small>PUAN</small><div style="font-size:36px; font-weight:900;">${s.score}</div></div>
             </div>
-            <div style="margin-bottom:30px; font-size:18px;"><b>Öğrenci:</b> ${s.student_name} <br> <span style="font-size:14px; color:#64748b;">Kurum Genel Ortalaması: <b>${avg}</b></span></div>
+            <div style="margin-bottom:20px;"><b>Öğrenci:</b> ${s.student_name} | <b>Kurum Ortalaması:</b> ${avg}</div>
             <table>
-                <thead><tr><th>DERS BAZLI PERFORMANS GRAFİĞİ</th><th style="text-align:center;">D</th><th style="text-align:center;">Y</th><th style="text-align:center;">NET</th></tr></thead>
-                <tbody>${rows}</tbody>
+                <thead><tr><th>DERS ADI</th><th>DOĞRU</th><th>YANLIŞ</th><th>NET</th><th>ANALİZ</th></tr></thead>
+                <tbody>
+                    <tr><td>Türkçe</td><td>${s.turkce_d || s.Turkce_d || 0}</td><td>${s.turkce_y || s.Turkce_y || 0}</td><td style="color:#10b981;">${s.turkce_n || s.Turkce_n || 0}</td><td><div class="bar-container"><div class="bar-fill" style="width:${(s.turkce_n || 0)*2.5}%"></div></div></td></tr>
+                    <tr><td>Matematik</td><td>${s.mat_d || s.Mat_d || 0}</td><td>${s.mat_y || s.Mat_y || 0}</td><td style="color:#10b981;">${s.mat_n || s.Mat_n || 0}</td><td><div class="bar-container"><div class="bar-fill" style="width:${(s.mat_n || 0)*2.5}%"></div></div></td></tr>
+                    <tr><td>Fen Bilimleri</td><td>${s.fen_d || s.Fen_d || 0}</td><td>${s.fen_y || s.Fen_y || 0}</td><td style="color:#10b981;">${s.fen_n || s.Fen_n || 0}</td><td><div class="bar-container"><div class="bar-fill" style="width:${(s.fen_n || 0)*2.5}%"></div></div></td></tr>
+                    <tr><td>Sosyal Bilgiler</td><td>${s.sos_d || s.Sos_d || 0}</td><td>${s.sos_y || s.Sos_y || 0}</td><td style="color:#10b981;">${s.sos_n || s.Sos_n || 0}</td><td><div class="bar-container"><div class="bar-fill" style="width:${(s.sos_n || 0)*2.5}%"></div></div></td></tr>
+                    <tr style="background:#f1f5f9;"><td>GENEL TOPLAM</td><td>-</td><td>-</td><td style="color:#4338ca; font-size:18px;">${s.correct} NET</td><td>%${((s.correct / 120) * 100).toFixed(1)} Başarı</td></tr>
+                </tbody>
             </table>
-            <div class="coach-card">
-                <div style="color:#4338ca; font-weight:800; font-size:15px; margin-bottom:15px; display:flex; align-items:center; gap:8px;">🤖 YAPAY ZEKA STRATEJİK KOÇLUK RAPORU</div>
-                <div style="margin-bottom:18px;"><b>Akademik Analiz:</b><br><span style="font-size:14px; line-height:1.6;">${report.analysis}</span></div>
-                <div style="margin-bottom:18px;"><b>Gelişim Yol Haritası:</b><br><span style="font-size:14px; line-height:1.6;">${report.roadmap}</span></div>
-                <div style="background:#fff; padding:15px; border-radius:12px; border:1px solid #e0e7ff;">
-                    <b style="color:#4338ca;">🚀 HAFTALIK ÇALIŞMA GÖREVİN:</b><br><span style="font-size:14px; line-height:1.6;">${report.weeklyTask}</span>
+            <div class="advice-box">
+                <div style="color:#1e1b4b; font-weight:900; margin-bottom:15px; font-size:14px;">🤖 YAPAY ZEKA STRATEJİK KOÇLUK RAPORU</div>
+                <p><b>Akademik Durum:</b> ${advice.analiz}</p>
+                <p><b>Gelişim Yol Haritası:</b> ${advice.yolHaritasi}</p>
+                <div style="background:#fff; padding:15px; border-radius:10px; border:1px solid #e0e7ff; margin-top:15px;">
+                    <b style="color:#4338ca;">🚀 HAFTALIK ÖZEL GÖREVİN:</b><br>${advice.haftalık}
                 </div>
             </div>
             <div class="footer">
-                <div style="font-size:12px; color:#94a3b8; max-width:400px;">Bu rapor öğrencinin verileri üzerinden objektif olarak oluşturulmuştur. Başarı bir sonuç değil, doğru planlanmış bir süreçtir.</div>
-                <div style="text-align:center;"><img src="${qrUrl}" width="80"><br><small style="color:#64748b; font-size:10px;">DİJİTAL DOĞRULAMA</small></div>
+                <div style="font-size:11px; color:#94a3b8;">* Bu rapor kurum verileri üzerinden kişiye özel üretilmiştir.</div>
+                <div style="text-align:right;"><img src="${qrUrl}" width="80"><br><small style="font-size:10px; color:#64748b;">DİJİTAL DOĞRULAMA</small></div>
             </div>
         </div>
     </body></html>`;
@@ -1969,28 +1938,21 @@ function generateSuperPDF(exam, s, avg) {
     setTimeout(() => { w.print(); }, 1000);
 }
 
-// --- TOPLU YAZDIRMA (DETAYLI) ---
-function printBulkKarneler(exam) {
-    const sts = window.currentExamData[exam];
+function printBulkKarneler(examName) {
+    const sts = window.currentExamData[examName];
     const avg = (sts.reduce((acc, s) => acc + parseFloat(s.score), 0) / sts.length).toFixed(2);
     const w = window.open('', '_blank');
-    let h = '<html><head><style>body{margin:0;font-family:sans-serif}.p-break{page-break-after:always;padding:30px;display:flex;justify-content:center;background:#fff}</style></head><body>';
+    let h = '<html><head><style>body{margin:0;font-family:sans-serif}.p-break{page-break-after:always;padding:40px;display:flex;justify-content:center}</style></head><body>';
     sts.forEach(s => {
-        const report = getAdvancedCoachAdvice(s, avg);
-        h += `<div class="p-break"><div style="width:750px; border:2px solid #f1f5f9; padding:40px; border-radius:30px; position:relative;">
-            <div style="text-align:center; border-bottom:2px solid #1e1b4b; padding-bottom:15px; margin-bottom:25px;">
-                <h2 style="margin:0; color:#1e1b4b;">${exam} ANALİZ RAPORU</h2>
-                <div style="margin-top:10px; font-weight:bold; font-size:18px;">${s.student_name} - PUAN: ${s.score}</div>
+        const adv = getPerfectAdvice(s, avg);
+        h += `<div class="p-break"><div style="width:650px; border:2px solid #f1f5f9; padding:40px; border-radius:25px; border-top:12px solid #1e1b4b;">
+            <h2 style="text-align:center; margin:0;">${examName} - KARNE</h2>
+            <div style="display:flex; justify-content:space-between; margin-top:20px; padding:10px; background:#f8fafc; font-weight:bold;">
+                <span>${s.student_name}</span><span>Puan: ${s.score}</span>
             </div>
-            <div style="background:#f8fafc; padding:20px; border-radius:15px; margin-bottom:25px; border-left:8px solid #4338ca;">
-                <div style="font-weight:bold; margin-bottom:10px;">🤖 YAPAY ZEKA KOÇLUK NOTU:</div>
-                <div style="font-size:14px; line-height:1.5;">${report.analysis}</div>
-                <div style="margin-top:15px; font-weight:bold; color:#4338ca;">🎯 HAFTALIK HEDEF:</div>
-                <div style="font-size:14px;">${report.weeklyTask}</div>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:30px;">
-                <div style="color:#cbd5e1; font-weight:bold; font-size:12px;">KURUMSAL DİJİTAL BELGE</div>
-                <div style="border-top:1px solid #ddd; width:150px; text-align:center; padding-top:5px; font-size:12px;">KURUM ONAYI</div>
+            <div style="margin-top:30px; font-size:14px; line-height:1.6;">
+                <b>Yapay Zeka Analizi:</b><br>${adv.analiz}<br><br>
+                <b>Özel Hedef:</b><br>${adv.haftalık}
             </div>
         </div></div>`;
     });
@@ -1999,6 +1961,8 @@ function printBulkKarneler(exam) {
     w.document.close();
     setTimeout(() => { w.print(); }, 1500);
 }
+
+// --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
