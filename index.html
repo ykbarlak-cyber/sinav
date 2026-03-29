@@ -1745,29 +1745,48 @@ async function processExcelFile() {
                 if (!ogrenciAdi || !tytPuani) continue;
 
                 // Netleri Çek (Eğer boşsa 0 yaz)
-                const turkceNet = parseFloat(row['__EMPTY_6']) || 0;
-                const sosyalNet = parseFloat(row['__EMPTY_18']) || 0;
-                const matNet = parseFloat(row['__EMPTY_24']) || 0;
-                const fenNet = parseFloat(row['__EMPTY_33']) || 0;
-                
-                const toplamNet = turkceNet + sosyalNet + matNet + fenNet;
-                const siralama = row['__EMPTY_42'] || "-";
+const turkceNet = parseFloat(row['__EMPTY_6']) || 0;
+        const turkceY = parseFloat(row['__EMPTY_5']) || 0;
+        const turkceD = parseFloat(row['__EMPTY_4']) || 0;
 
-                // Supabase'e "quiz_results" tablosuna jilet gibi kaydet
-                await sbFetch('quiz_results', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        student_name: ogrenciAdi,
-                        quiz_title: examName + " (Fiziki)",
-                        score: parseFloat(tytPuani).toFixed(2), // Puanı küsuratlı al
-                        correct: Math.round(toplamNet), // Toplam Neti Doğru sütununa yaz (Geçici görsel için)
-                        wrong: 0,
-                        empty: 0,
-                        institution_id: currentInstitution.id,
-                        class_id: currentC,
-                        // Not: İleride veritabanına "turkce_net", "mat_net" sütunları eklersek buraya direkt onları da basarız!
-                    })
-                });
+        const sosyalNet = parseFloat(row['__EMPTY_18']) || 0;
+        const sosyalY = parseFloat(row['__EMPTY_17']) || 0;
+        const sosyalD = parseFloat(row['__EMPTY_16']) || 0;
+
+        const matNet = parseFloat(row['__EMPTY_24']) || 0;
+        const matY = parseFloat(row['__EMPTY_23']) || 0;
+        const matD = parseFloat(row['__EMPTY_22']) || 0;
+
+        const fenNet = parseFloat(row['__EMPTY_33']) || 0;
+        const fenY = parseFloat(row['__EMPTY_32']) || 0;
+        const fenD = parseFloat(row['__EMPTY_31']) || 0;
+
+        const toplamNet = turkceNet + sosyalNet + matNet + fenNet;
+        const siralama = row['__EMPTY_42'] || "-";
+
+        // Dersleri matbaanın okuyabileceği gizli bir pakete koyuyoruz
+        const dersPaketi = {
+            tD: turkceD, tY: turkceY, tN: turkceNet,
+            mD: matD, mY: matY, mN: matNet,
+            fD: fenD, fY: fenY, fN: fenNet,
+            sD: sosyalD, sY: sosyalY, sN: sosyalNet
+        };
+
+        // Supabase'e "quiz_results" tablosuna jilet gibi kaydet
+        await sbFetch('quiz_results', {
+            method: 'POST',
+            body: JSON.stringify({
+                student_name: ogrenciAdi,
+                quiz_title: examName + " (Fiziki)",
+                score: parseFloat(tytPuani).toFixed(2), 
+                correct: Math.round(toplamNet), 
+                wrong: 0,
+                empty: 0,
+                institution_id: currentInstitution.id,
+                class_id: currentC,
+                branch: JSON.stringify(dersPaketi) // BÜYÜK HACK: Ders verilerini gizlice buraya gömüyoruz!
+            })
+        });
                 savedCount++;
             }
 
