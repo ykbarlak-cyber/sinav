@@ -2037,6 +2037,102 @@ async function callGeminiAI(prompt, retries = 3) {
     // GÜVENLİK SİBOBU: 3 Deneme de başarısız olursa "undefined" yerine bu havalı mesajı ver:
     return "⚠️ Google Yapay Zeka sunucuları şu an tam kapasite çalışıyor. Lütfen yaklaşık 1 dakika bekleyip butona tekrar tıklayınız. Anlayışınız için teşekkür ederiz.";
 }
+      // --- VİZYON 10.0: TOPLU PDF KARNE BASIM MATBAASI (TEK TIKLA TÜM SINIF) ---
+window.printBulkKarneler = function(examName) {
+    const students = window.currentExamData[examName];
+    if (!students || students.length === 0) {
+        return alert("⚠️ Yazdırılacak öğrenci bulunamadı!");
+    }
+
+    const printWindow = window.open('', '_blank');
+    
+    let html = `
+    <html>
+    <head>
+        <title>${examName} - Tüm Karneler</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; padding: 20px; margin: 0; }
+            
+            /* SİHİRLİ KOD: Her sayfada bir karne olacak şekilde böl */
+            .sayfa-kirilimi { 
+                page-break-after: always; 
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                min-height: 100vh; 
+                padding: 20px; 
+                box-sizing: border-box; 
+            }
+            
+            .karne-karti { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 650px; border-top: 10px solid #8b5cf6; }
+            .baslik { text-align: center; color: #1e293b; margin-bottom: 30px; border-bottom: 2px dashed #cbd5e1; padding-bottom: 20px; }
+            .kurum { font-size: 1.2rem; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+            .sinav-adi { font-size: 1.8rem; color: #8b5cf6; font-weight: 900; margin: 10px 0; }
+            .ogrenci-isim { font-size: 2.2rem; text-align: center; color: #0f172a; font-weight: 800; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e2e8f0; }
+            .sonuc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .kutu { background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
+            .kutu-baslik { font-size: 1rem; color: #64748b; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+            .kutu-deger { font-size: 2.8rem; font-weight: 900; }
+            .deger-net { color: #10b981; }
+            .deger-puan { color: #3b82f6; }
+            .footer { margin-top: 40px; text-align: center; color: #94a3b8; font-size: 1rem; font-weight: bold; }
+            
+            /* Yazdırılırken arkaplanı temizle, kart gölgelerini kapat */
+            @media print {
+                body { background: white; padding: 0; }
+                .sayfa-kirilimi { min-height: auto; padding: 0; margin-bottom: 2cm; align-items: flex-start; }
+                .karne-karti { box-shadow: none; border: 2px solid #e2e8f0; width: 100%; }
+                @page { margin: 0; }
+            }
+        </style>
+    </head>
+    <body>`;
+
+    // Döngü: O sınava giren herkes için alt alta bir karne kartı çiz!
+    students.forEach((s, index) => {
+        html += `
+        <div class="sayfa-kirilimi">
+            <div class="karne-karti">
+                <div class="baslik">
+                    <div class="kurum">Eğitim Platformu</div>
+                    <div class="sinav-adi">${examName}</div>
+                </div>
+                
+                <div class="ogrenci-isim">👤 ${s.student_name || 'Bilinmeyen Öğrenci'}</div>
+                
+                <div class="sonuc-grid">
+                    <div class="kutu">
+                        <div class="kutu-baslik">Toplam Net</div>
+                        <div class="kutu-deger deger-net">${s.correct || 0}</div>
+                    </div>
+                    <div class="kutu">
+                        <div class="kutu-baslik">Sınav Puanı</div>
+                        <div class="kutu-deger deger-puan">${s.score || 0}</div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    Sınav Derecesi: ${index + 1}. Sıra 🏆 | Başarılar Dileriz!
+                </div>
+            </div>
+        </div>`;
+    });
+
+    html += `
+        <script>
+            // Bütün karneler çizildikten yarım saniye sonra otomatik yazdır menüsünü aç
+            window.onload = function() {
+                setTimeout(() => {
+                    window.print();
+                }, 800);
+            }
+        </script>
+    </body>
+    </html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+};
   // --- KAYBOLAN SINAV SONUÇLARI MOTORU ---
 async function viewQuizResults(quizId, quizName) { 
     showLoader('Sonuçlar getiriliyor...'); 
