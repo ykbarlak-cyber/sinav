@@ -1799,7 +1799,7 @@ async function showAllExamResults() {
     try {
         const res = await sbFetch(`quiz_results?class_id=eq.${currentC}&order=score.desc`);
         hideLoader();
-        if (!res || res.length === 0) return alert('⚠️ Sonuç bulunamadı.');
+        if (!res || res.length === 0) return alert('⚠️ Henüz sonuç bulunamadı.');
 
         let groupedResults = {};
         res.forEach(item => {
@@ -1810,8 +1810,8 @@ async function showAllExamResults() {
         window.currentExamData = groupedResults;
 
         let html = `
-        <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
-            <div style="width:100%; max-width:900px; background:#fff; border-radius:16px; padding:24px; max-height:90vh; overflow-y:auto; position:relative; box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+        <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
+            <div style="width:100%; max-width:900px; background:#fff; border-radius:16px; padding:24px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
                     <h2 style="margin:0; color:#10b981;">🏆 Sınav Analizleri</h2>
                     <div style="display:flex; gap:10px;">
@@ -1824,13 +1824,13 @@ async function showAllExamResults() {
             html += `
                 <div style="background:#f8fafc; padding:15px; border-radius:10px; margin-top:20px; border:1px solid #e2e8f0;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h3 style="margin:0;">📌 ${examName}</h3>
+                        <h3 style="margin:0; color:#1e293b;">📌 ${examName}</h3>
                         <div>
-                            <button onclick="printBulkKarneler('${examName}')" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; font-weight:bold; margin-right:5px;">🖨️ Tümünü Yazdır (PDF)</button>
+                            <button onclick="printBulkKarneler('${examName}')" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; font-weight:bold; margin-right:5px;">🖨️ Tümünü PDF Yap</button>
                             <button onclick="deleteExamResults('${examName}')" style="background:#dc2626; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer;">🗑️ Sil</button>
                         </div>
                     </div>
-                    <table style="width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden;">
+                    <table style="width:100%; border-collapse:collapse; background:white; border-radius:8px;">
                         <tr style="background:#edf2f7; text-align:left;">
                             <th style="padding:10px; border:1px solid #e2e8f0;">Sıra</th>
                             <th style="padding:10px; border:1px solid #e2e8f0;">Öğrenci</th>
@@ -1843,7 +1843,7 @@ async function showAllExamResults() {
                         <tr class="st-row" data-name="${s.student_name ? s.student_name.toLowerCase() : ''}">
                             <td style="padding:10px; border:1px solid #e2e8f0;">${idx + 1}</td>
                             <td style="padding:10px; border:1px solid #e2e8f0; font-weight:bold;">${s.student_name || '-'}</td>
-                            <td style="padding:10px; border:1px solid #e2e8f0; text-align:center; color:#10b981;">${s.correct || 0}</td>
+                            <td style="padding:10px; border:1px solid #e2e8f0; text-align:center; color:#10b981; font-weight:bold;">${s.correct || 0}</td>
                             <td style="padding:10px; border:1px solid #e2e8f0; text-align:center; color:#3b82f6; font-weight:bold;">${s.score || 0}</td>
                             <td style="padding:10px; border:1px solid #e2e8f0; text-align:center;">
                                 <button onclick="generateOnePDF('${examName}','${s.student_name}',${s.correct},${s.score})" style="background:#8b5cf6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Karne</button>
@@ -1854,7 +1854,7 @@ async function showAllExamResults() {
         }
         html += `</div></div>`;
         document.body.insertAdjacentHTML('beforeend', html);
-    } catch (e) { hideLoader(); alert('Hata oluştu!'); }
+    } catch (e) { hideLoader(); alert('Hata!'); }
 }
 
 function filterExamStudents() {
@@ -1865,7 +1865,7 @@ function filterExamStudents() {
 }
 
 async function deleteExamResults(title) {
-    if (!confirm(title + ' silinecek?')) return;
+    if (!confirm(title + ' sınavı tamamen silinsin mi?')) return;
     showLoader('Siliniyor...');
     const curC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
     await sbFetch(`quiz_results?class_id=eq.${curC}&quiz_title=eq.${encodeURIComponent(title)}`, {method:'DELETE'});
@@ -1873,10 +1873,9 @@ async function deleteExamResults(title) {
     showAllExamResults();
 }
 
-// MATBAA MOTORLARI
 function generateOnePDF(ex, st, net, sc) {
     const w = window.open('', '_blank');
-    w.document.write('<html><body style="font-family:sans-serif; padding:50px; display:flex; justify-content:center;"><div style="width:500px; padding:30px; border:5px solid #8b5cf6; border-radius:20px; text-align:center;"><h1>'+ex+'</h1><hr><h2>'+st+'</h2><div style="font-size:30px; margin:20px; color:#10b981;">NET: '+net+'</div><div style="font-size:40px; font-weight:bold; color:#3b82f6;">PUAN: '+sc+'</div></div></body></html>');
+    w.document.write('<html><body style="font-family:sans-serif; padding:50px; display:flex; justify-content:center;"><div style="width:500px; padding:30px; border:5px solid #8b5cf6; border-radius:20px; text-align:center;"><h3>'+ex+'</h3><hr><h1>'+st+'</h1><div style="font-size:30px; margin:20px; color:#10b981;">NET: '+net+'</div><div style="font-size:40px; font-weight:bold; color:#3b82f6;">PUAN: '+sc+'</div></div></body></html>');
     w.document.close();
     setTimeout(() => { w.print(); }, 500);
 }
@@ -1886,12 +1885,12 @@ function printBulkKarneler(exam) {
     const w = window.open('', '_blank');
     let h = '<html><head><style>.p-break{page-break-after:always; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif;}</style></head><body>';
     sts.forEach(s => {
-        h += `<div class="p-break"><div style="width:500px; padding:30px; border:5px solid #8b5cf6; border-radius:20px; text-align:center;"><h1>${exam}</h1><hr><h2>${s.student_name}</h2><div style="font-size:30px; margin:20px; color:#10b981;">NET: ${s.correct}</div><div style="font-size:40px; font-weight:bold; color:#3b82f6;">PUAN: ${s.score}</div></div></div>`;
+        h += `<div class="p-break"><div style="width:500px; padding:30px; border:5px solid #8b5cf6; border-radius:20px; text-align:center;"><h3>${exam}</h3><hr><h1>${s.student_name}</h1><div style="font-size:30px; margin:20px; color:#10b981;">NET: ${s.correct}</div><div style="font-size:40px; font-weight:bold; color:#3b82f6;">PUAN: ${s.score}</div></div></div>`;
     });
     h += '</body></html>';
     w.document.write(h);
     w.document.close();
-    setTimeout(() => { w.print(); }, 800);
+    setTimeout(() => { w.print(); }, 1000);
 }
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
