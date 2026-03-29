@@ -1792,19 +1792,18 @@ if (myModal) {
     reader.readAsArrayBuffer(file);
 }
  // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
-// --- VİZYON 12.0: MASTER SINAV YÖNETİM VE PREMIUM MATBAA SİSTEMİ ---
+// --- VİZYON 14.0: SINIF KIYASLAMALI VE GRAFİKLİ ULTRA ANALİTİK MATBAA ---
 
 async function showAllExamResults() {
     const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
-    showLoader('Veritabanı taranıyor...');
+    showLoader('Sınıf İstatistikleri Hesaplanıyor...');
     try {
         const res = await sbFetch(`quiz_results?class_id=eq.${currentC}&order=score.desc`);
         hideLoader();
-        if (!res || res.length === 0) return alert('⚠️ Henüz sınav sonucu bulunamadı.');
+        if (!res || res.length === 0) return alert('⚠️ Veri bulunamadı.');
 
         let groupedResults = {};
         res.forEach(item => {
-            // Excel başlık satırlarını (NaN olanları) otomatik ele!
             if (item.student_name && item.student_name.toLowerCase() !== 'adi soyadi' && !isNaN(item.score)) {
                 const examName = item.quiz_title || 'İsimsiz Sınav';
                 if (!groupedResults[examName]) groupedResults[examName] = [];
@@ -1815,46 +1814,49 @@ async function showAllExamResults() {
 
         let html = `
         <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
-            <div style="width:100%; max-width:950px; background:#fff; border-radius:20px; padding:30px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 50px rgba(0,0,0,0.5); position:relative; border-top:8px solid #10b981;">
+            <div style="width:100%; max-width:950px; background:#fff; border-radius:20px; padding:30px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 50px rgba(0,0,0,0.5); border-top:10px solid #6366f1;">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f1f5f9; padding-bottom:20px; margin-bottom:20px;">
                     <div>
-                        <h2 style="margin:0; color:#0f172a; font-size:24px;">🏆 Sınav Analiz Merkezi</h2>
-                        <p style="margin:5px 0 0; color:#64748b; font-size:14px;">Tüm sınavlar ve öğrenci karneleri burada listelenir.</p>
+                        <h2 style="margin:0; color:#1e1b4b; font-size:26px;">💎 Ultra Analiz Merkezi</h2>
+                        <p style="margin:5px 0 0; color:#64748b;">Sınıf kıyaslamalı, grafikli ve koçluk destekli sistem.</p>
                     </div>
-                    <div style="display:flex; gap:12px;">
-                        <input type="text" id="stSearch" onkeyup="filterExamStudents()" placeholder="🔍 Öğrenci Adı Ara..." style="padding:10px 15px; border-radius:10px; border:2px solid #e2e8f0; outline:none; font-weight:bold; width:250px;">
-                        <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#f1f5f9; color:#64748b; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold; transition:0.3s;" onmouseover="this.style.background='#e2e8f0'">Kapat</button>
-                    </div>
+                    <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#f1f5f9; color:#64748b; border:none; padding:12px 25px; border-radius:12px; cursor:pointer; font-weight:bold;">Kapat</button>
                 </div>`;
 
         for (const [examName, students] of Object.entries(groupedResults)) {
+            // Sınıf Ortalamasını Hesapla
+            const classAvg = (students.reduce((acc, s) => acc + parseFloat(s.score), 0) / students.length).toFixed(2);
+
             html += `
                 <div style="background:#f8fafc; padding:20px; border-radius:15px; margin-top:25px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-                        <h3 style="margin:0; color:#1e293b; font-size:18px; display:flex; align-items:center;">📂 ${examName} <span style="margin-left:10px; font-size:12px; background:#e2e8f0; padding:2px 8px; border-radius:20px; color:#475569;">${students.length} Öğrenci</span></h3>
-                        <div style="display:flex; gap:8px;">
-                            <button onclick="printBulkKarneler('${examName}')" style="background:#3b82f6; color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px; box-shadow:0 4px 6px rgba(59,130,246,0.2);">🖨️ Toplu Karne (PDF)</button>
-                            <button onclick="deleteExamResults('${examName}')" style="background:#fff; color:#ef4444; border:1px solid #fecaca; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:bold;" onmouseover="this.style.background='#fef2f2'">🗑️ Sınavı Sil</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <div>
+                            <h3 style="margin:0; color:#1e293b;">📌 ${examName}</h3>
+                            <small style="color:#6366f1; font-weight:bold;">Sınıf Ortalaması: ${classAvg}</small>
                         </div>
+                        <button onclick="printBulkKarneler('${examName}')" style="background:#6366f1; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">🖨️ Tümünü Yazdır</button>
                     </div>
-                    <div style="overflow-x:auto; border-radius:10px; border:1px solid #e2e8f0;">
-                        <table style="width:100%; border-collapse:collapse; background:white;">
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; background:white; border-radius:10px;">
                             <tr style="background:#f1f5f9; text-align:left;">
-                                <th style="padding:12px; font-size:13px; color:#475569; width:60px;">Sıra</th>
-                                <th style="padding:12px; font-size:13px; color:#475569;">Öğrenci Bilgisi</th>
-                                <th style="padding:12px; font-size:13px; color:#475569; text-align:center;">Net</th>
-                                <th style="padding:12px; font-size:13px; color:#475569; text-align:center;">Puan</th>
-                                <th style="padding:12px; font-size:13px; color:#475569; text-align:center;">İşlem</th>
+                                <th style="padding:12px; color:#475569;">Öğrenci</th>
+                                <th style="padding:12px; color:#475569; text-align:center;">Puan</th>
+                                <th style="padding:12px; color:#475569; text-align:center;">Durum</th>
+                                <th style="padding:12px; color:#475569; text-align:center;">İşlem</th>
                             </tr>`;
-            students.forEach((s, idx) => {
+            students.forEach((s) => {
+                const isAbove = parseFloat(s.score) >= classAvg;
                 html += `
-                            <tr class="st-row" data-name="${s.student_name ? s.student_name.toLowerCase() : ''}" style="border-bottom:1px solid #f1f5f9; transition:0.2s;" onmouseover="this.style.background='#fcfcfd'">
-                                <td style="padding:12px; font-weight:bold; color:#94a3b8;">#${idx + 1}</td>
-                                <td style="padding:12px; font-weight:bold; color:#0f172a;">${s.student_name}</td>
-                                <td style="padding:12px; text-align:center;"><span style="background:#ecfdf5; color:#10b981; padding:4px 10px; border-radius:6px; font-weight:bold;">${s.correct}</span></td>
-                                <td style="padding:12px; text-align:center; font-weight:800; color:#3b82f6;">${s.score}</td>
+                            <tr style="border-bottom:1px solid #f1f5f9;">
+                                <td style="padding:12px; font-weight:bold;">${s.student_name}</td>
+                                <td style="padding:12px; text-align:center; color:#6366f1; font-weight:900;">${s.score}</td>
                                 <td style="padding:12px; text-align:center;">
-                                    <button onclick="generateOnePDF('${examName}','${s.student_name}',${s.correct},${s.score})" style="background:#8b5cf6; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:bold;">📄 Karne</button>
+                                    <span style="background:${isAbove ? '#dcfce7':'#fee2e2'}; color:${isAbove ? '#166534':'#991b1b'}; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:bold;">
+                                        ${isAbove ? 'Ort. Üstü' : 'Ort. Altı'}
+                                    </span>
+                                </td>
+                                <td style="padding:12px; text-align:center;">
+                                    <button onclick="generateUltraPDF('${examName}', ${JSON.stringify(s).replace(/"/g, '&quot;')}, ${classAvg})" style="background:#4f46e5; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">Detaylı Karne</button>
                                 </td>
                             </tr>`;
             });
@@ -1862,40 +1864,93 @@ async function showAllExamResults() {
         }
         html += `</div></div>`;
         document.body.insertAdjacentHTML('beforeend', html);
-    } catch (e) { hideLoader(); alert('Hata: ' + e.message); }
+    } catch (e) { hideLoader(); alert('Hata!'); }
 }
 
-function filterExamStudents() {
-    const val = document.getElementById('stSearch').value.toLowerCase();
-    document.querySelectorAll('.st-row').forEach(r => {
-        r.style.display = r.getAttribute('data-name').includes(val) ? '' : 'none';
-    });
+function getCoachAdvice(s, avg) {
+    const score = parseFloat(s.score);
+    if (score > avg + 50) return { d: "Sınıf ortalamasının çok üzerinde bir performans sergiledin. Mevcut çalışma disiplinin seni hedeflerine ulaştıracaktır.", o: "Konu tekrarı yerine zorluk seviyesi yüksek soru bankalarına ve branş denemelerine ağırlık vermelisin." };
+    if (score >= avg) return { d: "Sınıf ortalamasını yakalayan, dengeli bir sonuç aldın. Temel konulara hakimsin ancak birkaç kritik hata puanını sınırlamış.", o: "Hata yaptığın soruların konularını listeleyip, o alanlarda kısa özet okumaları yaparak netlerini artırabilirsin." };
+    return { d: "Bu sınavda sınıf ortalamasının gerisinde kaldın. Bazı derslerdeki temel eksiklikler genel puanını etkilemiş görünüyor.", o: "Moral bozmak yerine, en düşük net çıkardığın dersten başlayarak temel konu anlatım videolarına dönmen faydalı olacaktır." };
 }
 
-async function deleteExamResults(title) {
-    if (!confirm('⚠️ "' + title + '" sınavına ait tüm sonuçlar kalıcı olarak silinecek. Onaylıyor musunuz?')) return;
-    showLoader('Veriler siliniyor...');
-    const curC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
-    await sbFetch(`quiz_results?class_id=eq.${curC}&quiz_title=eq.${encodeURIComponent(title)}`, {method:'DELETE'});
-    const modal = document.getElementById('masterResultsModal');
-    if (modal) modal.remove();
-    showAllExamResults();
-}
-
-function generateOnePDF(ex, st, net, sc) {
+function generateUltraPDF(exam, s, avg) {
+    const advice = getCoachAdvice(s, avg);
     const w = window.open('', '_blank');
-    const html = '<html><head><title>Karne</title><style>body{font-family:sans-serif;background:#f0f2f5;display:flex;justify-content:center;padding:40px}.card{background:#fff;width:500px;padding:40px;border-radius:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);border-top:10px solid #8b5cf6;text-align:center}h3{color:#64748b;text-transform:uppercase;letter-spacing:1px;font-size:14px}h1{margin:10px 0 30px;color:#1e293b;font-size:28px}.box{background:#f8fafc;padding:20px;border-radius:12px;margin:10px 0;border:1px solid #e2e8f0}.label{font-size:12px;color:#94a3b8;font-weight:bold}.val{font-size:32px;font-weight:900;margin-top:5px}.net{color:#10b981}.puan{color:#3b82f6}.footer{margin-top:30px;font-size:12px;color:#cbd5e1}</style></head><body><div class="card"><h3>' + ex + '</h3><h1>' + st + '</h1><div class="box"><div class="label">TOPLAM NET</div><div class="val net">' + net + '</div></div><div class="box"><div class="label">SINAV PUANI</div><div class="val puan">' + sc + '</div></div><div class="footer">Eğitim Platformu Otomatik Sonuç Belgesi</div></div></body></html>';
+    const subjects = [
+        {n: 'Türkçe', d: s.turkce_d, y: s.turkce_y, net: s.turkce_n},
+        {n: 'Matematik', d: s.mat_d, y: s.mat_y, net: s.mat_n},
+        {n: 'Fen Bilimleri', d: s.fen_d, y: s.fen_y, net: s.fen_n},
+        {n: 'Sosyal Bilgiler', d: s.sos_d, y: s.sos_y, net: s.sos_n}
+    ];
+
+    let rows = "";
+    subjects.forEach(sub => {
+        const netVal = parseFloat(sub.net) || 0;
+        const barWidth = Math.min(Math.max(netVal * 5, 5), 100); // Görsel bar hesapla
+        rows += `
+        <tr>
+            <td style="padding:15px; border-bottom:1px solid #eee;">
+                <b>${sub.n}</b>
+                <div style="background:#eee; height:8px; border-radius:4px; margin-top:5px; width:100%;">
+                    <div style="background:#6366f1; height:8px; border-radius:4px; width:${barWidth}%;"></div>
+                </div>
+            </td>
+            <td style="text-align:center; padding:15px; border-bottom:1px solid #eee;">${sub.d || 0}</td>
+            <td style="text-align:center; padding:15px; border-bottom:1px solid #eee;">${sub.y || 0}</td>
+            <td style="text-align:center; padding:15px; border-bottom:1px solid #eee; font-weight:900; color:#4f46e5;">${sub.net || 0}</td>
+        </tr>`;
+    });
+
+    const html = `
+    <html><head><style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; padding: 40px; }
+        .page { background: #fff; max-width: 800px; margin: auto; padding: 40px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-top: 15px solid #4f46e5; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px; }
+        .score-badge { background: #4f46e5; color: white; padding: 15px 25px; border-radius: 15px; text-align: center; }
+        .advice-box { background: #fefce8; border-left: 5px solid #f59e0b; padding: 20px; border-radius: 10px; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: #64748b; font-size: 12px; text-transform: uppercase; padding: 10px; }
+    </style></head><body>
+        <div class="page">
+            <div class="header">
+                <div><h1 style="margin:0; color:#1e1b4b;">SINAV KARNESİ</h1><small>${exam}</small></div>
+                <div class="score-badge"><small>PUAN</small><div style="font-size:32px; font-weight:900;">${s.score}</div></div>
+            </div>
+            <div style="margin-bottom:20px;"><b>Öğrenci:</b> ${s.student_name} | <b>Sınıf Ortalaması:</b> ${avg}</div>
+            <table>
+                <thead><tr><th>DERS BAZLI ANALİZ</th><th style="text-align:center;">D</th><th style="text-align:center;">Y</th><th style="text-align:center;">NET</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div class="advice-box">
+                <div style="font-weight:900; color:#92400e; margin-bottom:10px;">🤖 YAPAY ZEKA KOÇLUK RAPORU</div>
+                <p><b>Analiz:</b> ${advice.d}</p>
+                <p><b>Yol Haritası:</b> ${advice.o}</p>
+            </div>
+            <div style="text-align:center; margin-top:40px; border-top:1px solid #eee; padding-top:20px; color:#94a3b8; font-size:12px;">
+                Bu belge dijital olarak oluşturulmuştur. Sınıf ortalaması verileri anlıktır.
+            </div>
+        </div>
+    </body></html>`;
     w.document.write(html);
     w.document.close();
     setTimeout(() => { w.print(); }, 800);
 }
 
+// Toplu yazdırma aynı mantıkla çalışır
 function printBulkKarneler(exam) {
     const sts = window.currentExamData[exam];
+    const avg = (sts.reduce((acc, s) => acc + parseFloat(s.score), 0) / sts.length).toFixed(2);
     const w = window.open('', '_blank');
-    let h = '<html><head><style>body{margin:0;font-family:sans-serif}.p-break{page-break-after:always;height:100vh;display:flex;align-items:center;justify-content:center;background:#f0f2f5}.card{background:#fff;width:500px;padding:40px;border-radius:20px;border-top:10px solid #8b5cf6;text-align:center}h3{color:#64748b;text-transform:uppercase;font-size:14px}h1{margin:10px 0 30px;color:#1e293b}.box{background:#f8fafc;padding:20px;border-radius:12px;margin:10px 0;border:1px solid #e2e8f0}.label{font-size:12px;color:#94a3b8;font-weight:bold}.val{font-size:32px;font-weight:900}.net{color:#10b981}.puan{color:#3b82f6}</style></head><body>';
+    let h = '<html><head><style>body{margin:0;font-family:sans-serif}.p-break{page-break-after:always;padding:40px;display:flex;justify-content:center}</style></head><body>';
     sts.forEach(s => {
-        h += '<div class="p-break"><div class="card"><h3>' + exam + '</h3><h1>' + s.student_name + '</h1><div class="box"><div class="label">TOPLAM NET</div><div class="val net">' + s.correct + '</div></div><div class="box"><div class="label">SINAV PUANI</div><div class="val puan">' + s.score + '</div></div></div></div>';
+        const advice = getCoachAdvice(s, avg);
+        h += `<div class="p-break"><div style="width:650px;border:1px solid #eee;padding:30px;border-radius:15px;">
+            <h2 style="text-align:center;color:#4f46e5;">${exam} - KARNE</h2>
+            <div style="display:flex;justify-content:space-between;background:#f8fafc;padding:10px;font-weight:bold;"><span>${s.student_name}</span><span>Puan: ${s.score} (Ort: ${avg})</span></div>
+            <p style="font-size:13px;margin-top:20px;"><b>Analiz:</b> ${advice.d}</p>
+            <p style="font-size:13px;"><b>Öneri:</b> ${advice.o}</p>
+        </div></div>`;
     });
     h += '</body></html>';
     w.document.write(h);
