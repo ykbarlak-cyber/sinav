@@ -1811,27 +1811,11 @@ if (myModal) {
     reader.readAsArrayBuffer(file);
 }
  // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
-// --- VİZYON 25.0: VERİTABANI KORUMALI, KUSURSUZ GÖRÜNÜM MATBAASI ---
-
-// Sadece var olan veriyi çeker, yoksa 0 döner.
-function getNetDYN(s) {
-    let tN=0, mN=0, fN=0, sN=0, tD=0, mD=0, fD=0, sD=0, tY=0, mY=0, fY=0, sY=0;
-    const keys = Object.keys(s);
-    keys.forEach(k => {
-        let clean = k.toLowerCase().replace(/[^a-z]/g,'');
-        let val = parseFloat(s[k]);
-        if(isNaN(val)) return;
-        if(clean.includes('turk')&&clean.endsWith('n')) tN = val;
-        if(clean.includes('mat')&&clean.endsWith('n')) mN = val;
-        if(clean.includes('fen')&&clean.endsWith('n')) fN = val;
-        if(clean.includes('sos')&&clean.endsWith('n')) sN = val;
-    });
-    return { tN, mN, fN, sN, tD, mD, fD, sD, tY, mY, fY, sY };
-}
+// --- VİZYON ZİRVE 2.0: PUANA DEĞİL "NETE" BAKAN GERÇEKÇİ KOÇLUK MATBAASI ---
 
 async function showAllExamResults() {
     const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
-    showLoader('Karneler Hazırlanıyor...');
+    showLoader('Gerçekçi Analiz Motoru Çalışıyor...');
     try {
         const res = await sbFetch(`quiz_results?class_id=eq.${currentC}&order=score.desc`);
         hideLoader();
@@ -1851,7 +1835,7 @@ async function showAllExamResults() {
         <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.98); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:'Segoe UI', sans-serif;">
             <div style="width:100%; max-width:1050px; background:#fff; border-radius:24px; padding:40px; max-height:92vh; overflow-y:auto; box-shadow:0 30px 60px rgba(0,0,0,0.6); border-top:10px solid #0f172a;">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:20px; margin-bottom:25px;">
-                    <div><h2 style="margin:0; color:#0f172a; font-size:28px;">🎯 ÖSYM Karne Merkezi</h2></div>
+                    <div><h2 style="margin:0; color:#0f172a; font-size:28px;">🎯 ÖSYM Karne ve Gerçekçi Koçluk Merkezi</h2></div>
                     <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#e2e8f0; color:#334155; border:none; padding:12px 25px; border-radius:12px; cursor:pointer; font-weight:900;">KAPAT</button>
                 </div>`;
 
@@ -1864,12 +1848,13 @@ async function showAllExamResults() {
                         <button onclick="printBulkKarneler('${examName}')" style="background:#0f172a; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">🖨️ TOPLU YAZDIR</button>
                     </div>
                     <table style="width:100%; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden;">
-                        <tr style="background:#f1f5f9;"><th style="padding:15px; text-align:left;">ÖĞRENCİ</th><th style="padding:15px;">PUAN</th><th style="padding:15px;">İŞLEM</th></tr>`;
+                        <tr style="background:#f1f5f9;"><th style="padding:15px; text-align:left;">ÖĞRENCİ</th><th style="padding:15px;">PUAN (NET)</th><th style="padding:15px;">İŞLEM</th></tr>`;
             students.forEach((s) => {
+                const totalNet = parseFloat(s.correct) || 0;
                 html += `
                         <tr style="border-bottom:1px solid #f1f5f9;">
                             <td style="padding:15px; font-weight:bold;">${s.student_name}</td>
-                            <td style="padding:15px; text-align:center; color:#2563eb; font-weight:900;">${s.score}</td>
+                            <td style="padding:15px; text-align:center; color:#2563eb; font-weight:900;">${s.score} <small style="color:#64748b;">(${totalNet} Net)</small></td>
                             <td style="padding:15px; text-align:center;"><button onclick="generateOsymPDF('${examName}', ${JSON.stringify(s).replace(/"/g, '&quot;')}, ${trAvg})" style="background:#2563eb; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">KARNE ÇIKAR</button></td>
                         </tr>`;
             });
@@ -1880,43 +1865,48 @@ async function showAllExamResults() {
     } catch (e) { hideLoader(); console.error(e); }
 }
 
-// Güvenli Koçluk: Sadece Genel Puan/Net üzerinden konuşur, branş sallamaz!
-function getSafeCoaching(score, trAvg) {
-    if (score >= 350) {
+// YALAN SÖYLEMEYEN, SADECE NETE BAKAN KOÇLUK MOTORU
+function getRealisticCoaching(net) {
+    if (net >= 90) {
         return {
-            teshis: "Bu sınavdaki genel performansın, Türkiye geneli sıralamalarda en üst %5'lik elit dilimde yer aldığını doğrulamaktadır. Akademik altyapın ve temel kavramlara hakimiyetin son derece sağlam. Ancak bu seviyede belirleyici olan zor sorular değil, kolay sorularda yapılan işlem veya dikkat hatalarıdır.",
-            kirilim: "Puan avantajın yüksek olsa da, sınav anı stresi veya zamanı yönetememe gibi faktörler potansiyelini perdeleyebilir. Branş bazlı eksiklerini kişisel olarak tespit edip onlara nokta atışı müdahale etmelisin.",
-            program: "• Pazartesi-Cuma: Her gün süre tutarak 1 adet branş denemesi (Rastgele bir dersten).\n• Cumartesi: 135 dakikalık tam kapsamlı Türkiye Geneli Denemesi çözümü.\n• Pazar: Denemede yanlış yapılan soruların video çözümlerinin izlenmesi ve analiz edilmesi."
+            teshis: "Mevcut net sayın (90+), Türkiye geneli sıralamalarda üst dilimlerde yer aldığını gösteriyor. Akademik altyapın oldukça sağlam. Puanın kaç olursa olsun bu net bandı seni hedeflerine yaklaştırır.",
+            kirilim: "Bu seviyede konu eksiğinden çok, dikkat ve süre yönetimi kaynaklı hatalar puan kaybettirir. Turlama taktiğini mükemmelleştirmelisin.",
+            program: "• Haftada 3 tam kapsamlı genel deneme çöz ve süreyi 10 dakika eksik tut.\n• Yanlış yaptığın veya boş bıraktığın soruların derinlemesine analizini yap."
         };
-    } else if (score >= trAvg) {
+    } else if (net >= 65) {
         return {
-            teshis: "Sonuçların Türkiye geneli ortalamasının üzerinde. Belirli konularda temel bilgi birikimine sahipsin ancak potansiyelinin tamamını skora yansıtamadığın açıkça görülüyor. Puanın seni yarışta tutar ancak garanti bir başarı sağlamaz.",
-            kirilim: "Zaman yönetimi veya belirli konulardaki 'yarım bilgiler' seni aşağı çekiyor. Netlerini sıçratmak için deneme çözmekten ziyade, en çok yanlış yaptığın alanları bulup o konunun teorisine inmen gerekiyor.",
-            program: "• Hafta İçi: En zayıf olduğunu bildiğin 2 dersi seçip, günde 2 saat konu anlatım videosu izle.\n• Konu sonraları: İzlediğin konularla ilgili mutlaka 50'şer kavrama testi çöz.\n• Hafta Sonu: Sadece 1 adet Genel Deneme çöz ve hata analizi yap."
+            teshis: "Elde ettiğin bu net (65-90 bandı), ortalamanın üzerinde bir birikimin olduğunu gösteriyor. Ancak potansiyelini henüz tam yansıtamadığın ve bazı derslerde fire verdiğin açık.",
+            kirilim: "Seni yavaşlatan şey büyük ihtimalle 'yarım bildiğin' konular. Bu net bandında sıkışıp kalmamak için deneme çözmekten ziyade branş denemeleriyle zayıf kaslarını bulmalısın.",
+            program: "• En çok fire verdiğin 2 dersi belirle ve bu derslerin branş denemelerine ağırlık ver.\n• Eksik hissettiğin konularda acilen fasikül taraması yap."
+        };
+    } else if (net >= 45) { // 49 NET BURAYA DÜŞER, GERÇEKÇİ CEVAP ALIR!
+        return {
+            teshis: "Elde ettiğin bu net (45-65 bandı), temel konularda hala ciddi eksiklerinin olduğunu ve henüz sınavın istediği analitik seviyeye ulaşmadığını gösteriyor. Puanına aldanmamalısın.",
+            kirilim: "Sınav anı stresi veya 'zor deneme' bahanesine sığınmamalısın. Gerçek şu ki, ana derslerin temel dinamiği henüz oturmamış. Sürekli deneme çözmek sana şu aşamada bir şey katmaz.",
+            program: "• Genel deneme çözmeyi geçici olarak durdur.\n• En zayıf olduğun 2 ana dersten sıfırdan konu anlatım videoları izle.\n• İzlediğin her konunun ardından en az 100 öğretici temel test sorusu çöz."
         };
     } else {
         return {
-            teshis: "Gerçeklerle yüzleşme vakti: Mevcut puanın ÖSYM standartlarının ve hedeflediğin barajların oldukça gerisinde. Bu durum, akademik temelinde ve sınav stratejinde ciddi boşluklar olduğunu kanıtlıyor.",
-            kirilim: "Şu aşamada sürekli deneme çözmek, karmaşık sorularla vakit kaybetmek yapılabilecek en büyük hatadır. Temel kavramlar oturmadan bina inşa edilemez. Hızdan ziyade doğru bilgiye ihtiyacın var.",
-            program: "• Acil Eylem: Tüm denemeleri ve zor kaynakları bir kenara bırak.\n• Hafta İçi: Sadece konu anlatımlı fasiküllere ve sıfırdan eğitim videolarına odaklan.\n• Hafta Sonu: Çalıştığın konulardan sadece 'Temel Seviye' sorular çözerek özgüvenini ve bilgi temelini inşa et."
+            teshis: "Açık konuşmak gerekirse, mevcut netlerin (45 altı) ÖSYM barajlarının ve rekabetçi sıralamaların çok gerisinde. Şu anki çalışma stratejin veya sistemin kesinlikle işlemiyor.",
+            kirilim: "Temelin oldukça zayıf. Test teknikleriyle, taktiklerle veya deneme çözerek bu açığı kapatamazsın. Sabırlı olup en baştan sağlam bir inşa süreci başlatmalısın.",
+            program: "• Sınav taktiklerini unut, tamamen temel eğitime odaklan.\n• Matematik ve Türkçe temel konularından başlayarak günde en az 3 saat konu çalış.\n• Kavrama testleri dışında zorlayıcı yeni nesil soru çözme."
         };
     }
 }
 
 function generateOsymPDF(exam, s, trAvg) {
-    const d = getNetDYN(s);
+    let d = { tD:0, tY:0, tN:0, mD:0, mY:0, mN:0, fD:0, fY:0, fN:0, sD:0, sY:0, sN:0 };
+    try { if (s.branch) { d = {...d, ...JSON.parse(s.branch)}; } } catch(e) {}
+    
     const scoreVal = parseFloat(s.score) || 0;
     const totalNet = parseFloat(s.correct) || 0;
-    
-    // Veritabanında ders detayı var mı kontrolü
     const hasDetails = (d.tN + d.mN + d.fN + d.sN) > 0;
     
-    const adv = getSafeCoaching(scoreVal, trAvg);
+    // KOÇLUK ARTIK PUANA DEĞİL, SADECE "TOTAL NET"E BAKIYOR!
+    const adv = getRealisticCoaching(totalNet);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ykbarlak-cyber.github.io`;
 
     let tabloHtml = "";
-    
-    // EĞER VERİ YOKSA SIFIR ÇİZME! GÜZEL BİR ÖZET ÇİZ.
     if (!hasDetails) {
         tabloHtml = `
         <div style="background:#f1f5f9; padding:30px; border-radius:16px; display:flex; justify-content:space-around; align-items:center; border:2px dashed #cbd5e1; margin-bottom:30px;">
@@ -1927,19 +1917,20 @@ function generateOsymPDF(exam, s, trAvg) {
             <div style="width:2px; height:80px; background:#cbd5e1;"></div>
             <div style="text-align:center;">
                 <div style="color:#475569; font-size:14px; font-weight:900; margin-bottom:10px; text-transform:uppercase;">Akademik Durum</div>
-                <div style="color:${scoreVal >= trAvg ? '#10b981' : '#dc2626'}; font-size:32px; font-weight:900;">${scoreVal >= trAvg ? 'BARAJ ÜSTÜ' : 'GELİŞTİRİLMELİ'}</div>
+                <div style="color:${totalNet >= 65 ? '#10b981' : (totalNet >= 45 ? '#f59e0b' : '#dc2626')}; font-size:28px; font-weight:900;">
+                    ${totalNet >= 65 ? 'HEDEF BÖLGESİ' : (totalNet >= 45 ? 'GELİŞTİRİLMELİ' : 'RİSKLİ BÖLGE')}
+                </div>
             </div>
         </div>`;
     } else {
-        // Eğer bir gün veritabanına eklenirse diye hazır kod (şu an çalışmayacak)
         tabloHtml = `
         <table style="width:100%; border-collapse:collapse; margin-bottom:30px;">
             <thead><tr><th style="background:#0f172a; color:#fff; padding:12px; font-size:12px; text-align:left; padding-left:20px;">DERS</th><th style="background:#0f172a; color:#fff; padding:12px;">NET</th></tr></thead>
             <tbody>
-                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Türkçe</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${d.tN}</td></tr>
-                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Matematik</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${d.mN}</td></tr>
-                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Fen Bilimleri</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${d.fN}</td></tr>
-                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Sosyal Bilgiler</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${d.sN}</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Türkçe</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold; color:#10b981;">${d.tN}</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Matematik</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold; color:#10b981;">${d.mN}</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Fen Bilimleri</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold; color:#10b981;">${d.fN}</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #eee; font-weight:bold; padding-left:20px;">Sosyal Bilgiler</td><td style="padding:15px; border-bottom:1px solid #eee; text-align:center; font-weight:bold; color:#10b981;">${d.sN}</td></tr>
             </tbody>
         </table>`;
     }
@@ -1975,7 +1966,7 @@ function generateOsymPDF(exam, s, trAvg) {
             </div>
             
             <div style="margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 2px solid #e2e8f0; padding-top: 15px;">
-                <div style="font-size:10px; color:#64748b; max-width:450px;">Bu resmi evrak; ÖSYM tabanlı veri algoritmaları kullanılarak üretilmiştir. Başarı stratejik bir süreç yönetimidir.</div>
+                <div style="font-size:10px; color:#64748b; max-width:450px;">Bu resmi evrak, ÖSYM 120 soru (Net) baremi baz alınarak Yapay Zeka algoritmaları ile üretilmiştir. Başarı stratejik bir süreç yönetimidir.</div>
                 <div style="text-align:center;"><img src="${qrUrl}" width="80"><br><small style="color:#0f172a; font-size:10px; font-weight:900; margin-top:5px; display:block;">DİJİTAL ONAY</small></div>
             </div>
         </div>
@@ -1991,12 +1982,13 @@ function printBulkKarneler(examName) {
     const w = window.open('', '_blank');
     let h = '<html><head><style>body{margin:0;font-family:sans-serif;background:#f1f5f9;}.p-break{page-break-after:always;padding:40px;display:flex;justify-content:center;}</style></head><body>';
     sts.forEach(s => {
-        const adv = getSafeCoaching(parseFloat(s.score)||0, trAvg);
+        const totalNet = parseFloat(s.correct) || 0;
+        const adv = getRealisticCoaching(totalNet);
         h += `<div class="p-break"><div style="width:750px; background:#fff; border:1px solid #e2e8f0; padding:40px; border-radius:20px; border-top:15px solid #0f172a;">
             <h2 style="text-align:center; color:#0f172a; margin-top:0; font-size:26px; font-weight:900;">ÖSYM AKADEMİK YOL HARİTASI</h2>
             <div style="text-align:center; color:#475569; margin-bottom:20px; font-weight:bold;">${examName}</div>
             <div style="display:flex; justify-content:space-between; padding:15px; background:#f8fafc; border-radius:12px; margin-bottom:25px; border:1px solid #e2e8f0;">
-                <span style="font-weight:900; font-size:18px;">👤 ${s.student_name}</span><span style="font-weight:900; color:#2563eb; font-size:18px;">🏆 Puan: ${s.score}</span>
+                <span style="font-weight:900; font-size:18px;">👤 ${s.student_name}</span><span style="font-weight:900; color:#2563eb; font-size:18px;">🏆 Puan: ${s.score} <small>(${totalNet} Net)</small></span>
             </div>
             <div style="font-size:14px; line-height:1.6; color:#1e293b; text-align:justify;">
                 <div style="background:#f1f5f9; padding:15px; border-radius:10px; border-left:5px solid #2563eb; margin-bottom:15px;"><b style="color:#0f172a;">📌 Teşhis:</b><br>${adv.teshis}</div>
