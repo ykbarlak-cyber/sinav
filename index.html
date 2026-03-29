@@ -1813,6 +1813,29 @@ if (myModal) {
  // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
 // --- VİZYON 26.0: KİŞİYE ÖZEL, İSİM VE DERS ODAKLI DİNAMİK YAPAY ZEKA ---
 
+// --- VİZYON 27.0: WHATSAPP ENTEGRASYONLU, TAM KONTROLLÜ YÖNETİM PANELİ ---
+
+window.deleteExamData = async function(examName) {
+    if(!confirm(`⚠️ DİKKAT!\n\n"${examName}" sınavını ve bu sınava ait TÜM öğrenci sonuçlarını silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`)) return;
+    
+    showLoader('Sınav verileri siliniyor...');
+    try {
+        const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
+        await sbFetch(`quiz_results?quiz_title=eq.${encodeURIComponent(examName)}&class_id=eq.${currentC}`, { method: 'DELETE' });
+        hideLoader();
+        alert('✅ Sınav başarıyla tamamen silindi!');
+        if(document.getElementById('masterResultsModal')) document.getElementById('masterResultsModal').remove();
+        showAllExamResults(); 
+    } catch (e) { hideLoader(); console.error(e); alert('❌ Silme işlemi sırasında bir hata oluştu.'); }
+};
+
+// 🔥 YENİ: WHATSAPP GÖNDERİM MOTORU
+window.sendWhatsApp = function(name, net, score) {
+    const text = `Sayın Veli,\n\nÖğrencimiz *${name}*'in son ÖSYM Deneme Sınavı sonuçlanmıştır.\n\n📊 *Puan:* ${score}\n🎯 *Toplam Net:* ${net}\n\n🤖 Öğrencimize özel "Yapay Zeka Eğitim Koçluğu Raporu" ve "7 Günlük Hedef Programı" sistemimize işlenmiştir. \n\nSüreci yakından takip ettiğimizi bilmenizi ister, iyi günler dileriz.`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+};
+
 async function showAllExamResults() {
     const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
     showLoader('Dinamik Analiz Motoru Çalışıyor...');
@@ -1833,7 +1856,7 @@ async function showAllExamResults() {
 
         let html = `
         <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.98); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:'Segoe UI', sans-serif;">
-            <div style="width:100%; max-width:1050px; background:#fff; border-radius:24px; padding:40px; max-height:92vh; overflow-y:auto; box-shadow:0 30px 60px rgba(0,0,0,0.6); border-top:10px solid #0f172a;">
+            <div style="width:100%; max-width:1150px; background:#fff; border-radius:24px; padding:40px; max-height:92vh; overflow-y:auto; box-shadow:0 30px 60px rgba(0,0,0,0.6); border-top:10px solid #0f172a;">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:20px; margin-bottom:25px;">
                     <div><h2 style="margin:0; color:#0f172a; font-size:28px;">🎯 ÖSYM Kişiselleştirilmiş Karne Merkezi</h2></div>
                     <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#e2e8f0; color:#334155; border:none; padding:12px 25px; border-radius:12px; cursor:pointer; font-weight:900;">KAPAT</button>
@@ -1851,14 +1874,27 @@ async function showAllExamResults() {
                         </div>
                     </div>
                     <table style="width:100%; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden;">
-                        <tr style="background:#f1f5f9;"><th style="padding:15px; text-align:left;">ÖĞRENCİ</th><th style="padding:15px;">PUAN (NET)</th><th style="padding:15px;">İŞLEM</th></tr>`;
+                        <tr style="background:#f1f5f9;">
+                            <th style="padding:15px; text-align:left;">ÖĞRENCİ</th>
+                            <th style="padding:15px; text-align:center;">PUAN (NET)</th>
+                            <th style="padding:15px; text-align:center;">BİLDİRİM</th>
+                            <th style="padding:15px; text-align:center;">İŞLEM</th>
+                        </tr>`;
             students.forEach((s) => {
                 const totalNet = parseFloat(s.correct) || 0;
                 html += `
                         <tr style="border-bottom:1px solid #f1f5f9;">
-                            <td style="padding:15px; font-weight:bold;">${s.student_name}</td>
-                            <td style="padding:15px; text-align:center; color:#2563eb; font-weight:900;">${s.score} <small style="color:#64748b;">(${totalNet} Net)</small></td>
-                            <td style="padding:15px; text-align:center;"><button onclick="generateOsymPDF('${examName}', ${JSON.stringify(s).replace(/"/g, '&quot;')}, ${trAvg})" style="background:#2563eb; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">KARNE ÇIKAR</button></td>
+                            <td style="padding:15px; font-weight:bold; font-size:15px;">${s.student_name}</td>
+                            <td style="padding:15px; text-align:center; color:#2563eb; font-weight:900; font-size:18px;">${s.score} <small style="color:#64748b;">(${totalNet} Net)</small></td>
+                            <td style="padding:15px; text-align:center;">
+                                <button onclick="sendWhatsApp('${s.student_name.replace(/'/g, "\\'")}', ${totalNet}, ${s.score})" style="background:#16a34a; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; display:flex; align-items:center; justify-content:center; gap:5px; margin:auto;">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.031 21.031a9 9 0 1 1 5.922-1.897l-1.042-3.878 3.914 1.054a10.978 10.978 0 1 0-8.794 4.721zm-3.08-14.15a1.233 1.233 0 0 0-.877.387c-.244.258-.934.912-.934 2.222s.956 2.576 1.088 2.748c.134.17 1.83 2.923 4.542 4.025 2.257.915 3.018.734 3.551.691.534-.043 1.724-.705 1.968-1.388.244-.683.244-1.27.171-1.388-.073-.128-.273-.205-.572-.355-.3-.15-1.776-.877-1.998-.977-.222-.1-.383-.15-.544.1-.161.25-.766.977-.94 1.177-.172.2-.344.228-.644.078-.3-.15-1.267-.466-2.412-1.306-.89-.655-1.492-1.464-1.665-1.764-.173-.3-.018-.462.132-.612.135-.135.3-.344.45-.516.15-.172.2-.294.3-.494.1-.2.05-.378-.025-.528-.075-.15-.644-1.554-.882-2.128-.232-.556-.468-.48-.644-.488-.166-.008-.355-.01-.544-.01z"></path></svg>
+                                    VELİYE AT
+                                </button>
+                            </td>
+                            <td style="padding:15px; text-align:center;">
+                                <button onclick="generateOsymPDF('${examName}', ${JSON.stringify(s).replace(/"/g, '&quot;')}, ${trAvg})" style="background:#2563eb; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;">KARNE ÇIKAR</button>
+                            </td>
                         </tr>`;
             });
             html += `</table></div>`;
@@ -1867,7 +1903,6 @@ async function showAllExamResults() {
         document.body.insertAdjacentHTML('beforeend', html);
     } catch (e) { hideLoader(); console.error(e); }
 }
-
 // 🔥 KİŞİYE ÖZEL DİNAMİK YAPAY ZEKA MOTORU
 function getDynamicCoaching(name, totalNet, d, hasDetails) {
     // Eğer ders detayı yoksa jenerik ama isimli uyarı ver.
