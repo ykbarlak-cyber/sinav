@@ -1792,17 +1792,14 @@ if (myModal) {
     reader.readAsArrayBuffer(file);
 }
  // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
+// --- VİZYON 8.5: TÜM SINAV SONUÇLARI LİSTELEME VE MATBAA MOTORU ---
 async function showAllExamResults() {
     const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
-    
-    showLoader('Tüm Sonuçlar Veritabanından Çekiliyor...');
+    showLoader('Veriler Çekiliyor...');
     try {
         const res = await sbFetch(`quiz_results?class_id=eq.${currentC}&order=score.desc`);
         hideLoader();
-
-        if (!res || res.length === 0) {
-            return alert('⚠️ Bu sınıfa ait henüz bir sınav sonucu bulunamadı. Önce Excel yükleyin.');
-        }
+        if (!res || res.length === 0) return alert('⚠️ Sonuç bulunamadı.');
 
         let groupedResults = {};
         res.forEach(item => {
@@ -1810,115 +1807,92 @@ async function showAllExamResults() {
             if (!groupedResults[examName]) groupedResults[examName] = [];
             groupedResults[examName].push(item);
         });
+        window.currentExamData = groupedResults;
 
         let html = `
-        <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); z-index:99999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
-            <div class="card" style="width:100%; max-width:900px; background:#fff; border-radius:16px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
-                
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:12px; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
-                    <h2 style="margin:0; color:#10b981; font-size:1.6rem;">🏆 Tüm Sınav Sonuçları</h2>
-                    
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="text" id="studentSearchBox" onkeyup="filterExamStudents()" placeholder="🔍 Öğrenci Ara..." style="padding:10px; border-radius:8px; border:2px solid #e2e8f0; outline:none; font-weight:bold; color:#475569; width:250px;">
-                        <button onclick="document.getElementById('masterResultsModal').remove()" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#ef4444; line-height:1;">&times;</button>
+        <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:sans-serif;">
+            <div style="width:100%; max-width:900px; background:#fff; border-radius:16px; padding:24px; max-height:90vh; overflow-y:auto; position:relative; box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f1f5f9; padding-bottom:15px; margin-bottom:15px;">
+                    <h2 style="margin:0; color:#10b981;">🏆 Sınav Analizleri</h2>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="stSearch" onkeyup="filterExamStudents()" placeholder="🔍 Öğrenci Ara..." style="padding:8px; border-radius:6px; border:1px solid #ddd;">
+                        <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#ef4444; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">Kapat</button>
                     </div>
                 </div>`;
 
         for (const [examName, students] of Object.entries(groupedResults)) {
             html += `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:12px; border-left:4px solid #8b5cf6; margin-top:20px;">
-                    <h3 style="margin:0; color:#334155;">📌 ${examName}</h3>
-                    <button onclick="deleteExamResults('${examName}')" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; transition:0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">🗑️ Sınavı Sil</button>
-                </div>
-
-                <div style="overflow-x:auto;">
-                    <table style="width:100%; border-collapse: collapse; margin-bottom: 20px; font-size:0.95rem;">
-                        <thead>
-                            <tr style="background:#e2e8f0; color:#475569; text-align:left;">
-                                <th style="padding:12px; border-bottom:2px solid #cbd5e1; text-align:center;">Derece</th>
-                                <th style="padding:12px; border-bottom:2px solid #cbd5e1;">Öğrenci Adı</th>
-                                <th style="padding:12px; border-bottom:2px solid #cbd5e1; text-align:center;">Toplam Net</th>
-                                <th style="padding:12px; border-bottom:2px solid #cbd5e1; text-align:center;">Puan</th>
-                                <th style="padding:12px; border-bottom:2px solid #cbd5e1; text-align:center;">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-            
-            students.forEach((s, index) => {
-                let rankDisplay = index + 1;
-                if (index === 0) rankDisplay = '🥇 1.';
-                else if (index === 1) rankDisplay = '🥈 2.';
-                else if (index === 2) rankDisplay = '🥉 3.';
-
+                <div style="background:#f8fafc; padding:15px; border-radius:10px; margin-top:20px; border:1px solid #e2e8f0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h3 style="margin:0;">📌 ${examName}</h3>
+                        <div>
+                            <button onclick="printBulkKarneler('${examName}')" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; font-weight:bold; margin-right:5px;">🖨️ Tümünü Yazdır (PDF)</button>
+                            <button onclick="deleteExamResults('${examName}')" style="background:#dc2626; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer;">🗑️ Sil</button>
+                        </div>
+                    </div>
+                    <table style="width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden;">
+                        <tr style="background:#edf2f7; text-align:left;">
+                            <th style="padding:10px; border:1px solid #e2e8f0;">Sıra</th>
+                            <th style="padding:10px; border:1px solid #e2e8f0;">Öğrenci</th>
+                            <th style="padding:10px; border:1px solid #e2e8f0; text-align:center;">Net</th>
+                            <th style="padding:10px; border:1px solid #e2e8f0; text-align:center;">Puan</th>
+                            <th style="padding:10px; border:1px solid #e2e8f0; text-align:center;">İşlem</th>
+                        </tr>`;
+            students.forEach((s, idx) => {
                 html += `
-                    <tr class="student-result-row" data-name="${s.student_name ? s.student_name.toLowerCase() : ''}" style="border-bottom:1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                        <td style="padding:12px; font-weight:bold; color:#64748b; text-align:center;">${rankDisplay}</td>
-                        <td style="padding:12px; font-weight:bold; color:#0f172a;">${s.student_name || 'Bilinmeyen Öğrenci'}</td>
-                        <td style="padding:12px; color:#10b981; font-weight:bold; text-align:center;">${s.correct || 0} Net</td>
-                        <td style="padding:12px; color:#3b82f6; font-weight:bold; text-align:center;">${s.score || 0}</td>
-                        <td style="padding:12px; text-align:center;">
-                            <button onclick="alert('Kaptan! Burası gerçek PDF Karne Basım Matbaası olacak! Altyapı hazır, şov çok yakında!')" style="background:#8b5cf6; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(139,92,246,0.3);">📊 Karne Çıkar</button>
-                        </td>
-                    </tr>`;
+                        <tr class="st-row" data-name="${s.student_name ? s.student_name.toLowerCase() : ''}">
+                            <td style="padding:10px; border:1px solid #e2e8f0;">${idx + 1}</td>
+                            <td style="padding:10px; border:1px solid #e2e8f0; font-weight:bold;">${s.student_name || '-'}</td>
+                            <td style="padding:10px; border:1px solid #e2e8f0; text-align:center; color:#10b981;">${s.correct || 0}</td>
+                            <td style="padding:10px; border:1px solid #e2e8f0; text-align:center; color:#3b82f6; font-weight:bold;">${s.score || 0}</td>
+                            <td style="padding:10px; border:1px solid #e2e8f0; text-align:center;">
+                                <button onclick="generateOnePDF('${examName}','${s.student_name}',${s.correct},${s.score})" style="background:#8b5cf6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Karne</button>
+                            </td>
+                        </tr>`;
             });
-            html += `</tbody></table></div>`;
+            html += `</table></div>`;
         }
-
         html += `</div></div>`;
         document.body.insertAdjacentHTML('beforeend', html);
-
-    } catch (err) {
-        hideLoader();
-        console.error(err);
-        alert('❌ Sonuçlar getirilirken hata oluştu.');
-    }
+    } catch (e) { hideLoader(); alert('Hata oluştu!'); }
 }
 
-// --- ARAMA KUTUSU FİLTRELEME FONKSİYONU ---
-window.filterExamStudents = function() {
-    const input = document.getElementById('studentSearchBox').value.toLowerCase();
-    const rows = document.querySelectorAll('.student-result-row');
-    
-    rows.forEach(row => {
-        const name = row.getAttribute('data-name');
-        if (name.includes(input)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
+function filterExamStudents() {
+    const val = document.getElementById('stSearch').value.toLowerCase();
+    document.querySelectorAll('.st-row').forEach(r => {
+        r.style.display = r.getAttribute('data-name').includes(val) ? '' : 'none';
     });
-};
+}
 
-// --- SINAV SİLME FONKSİYONU ---
-window.deleteExamResults = async function(examTitle) {
-    if (!confirm(`⚠️ DİKKAT! "${examTitle}" sınavına ait TÜM öğrenci sonuçları kalıcı olarak silinecek. Onaylıyor musunuz?`)) {
-        return;
-    }
+async function deleteExamResults(title) {
+    if (!confirm(title + ' silinecek?')) return;
+    showLoader('Siliniyor...');
+    const curC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
+    await sbFetch(`quiz_results?class_id=eq.${curC}&quiz_title=eq.${encodeURIComponent(title)}`, {method:'DELETE'});
+    document.getElementById('masterResultsModal').remove();
+    showAllExamResults();
+}
 
-    showLoader('Sınav veritabanından siliniyor...');
-    try {
-        const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
-        
-        // Supabase'den bu sınıfa ve bu sınav adına ait tüm kayıtları uçur
-        await sbFetch(`quiz_results?class_id=eq.${currentC}&quiz_title=eq.${encodeURIComponent(examTitle)}`, {
-            method: 'DELETE'
-        });
-        
-        hideLoader();
-        
-        // Pencereyi kapat ve güncel listeyi tekrar aç
-        const modal = document.getElementById('masterResultsModal');
-        if (modal) modal.remove();
-        
-        alert('✅ Sınav başarıyla silindi!');
-        showAllExamResults(); 
+// MATBAA MOTORLARI
+function generateOnePDF(ex, st, net, sc) {
+    const w = window.open('', '_blank');
+    w.document.write('<html><body style="font-family:sans-serif; padding:50px; display:flex; justify-content:center;"><div style="width:500px; padding:30px; border:5px solid #8b5cf6; border-radius:20px; text-align:center;"><h1>'+ex+'</h1><hr><h2>'+st+'</h2><div style="font-size:30px; margin:20px; color:#10b981;">NET: '+net+'</div><div style="font-size:40px; font-weight:bold; color:#3b82f6;">PUAN: '+sc+'</div></div></body></html>');
+    w.document.close();
+    setTimeout(() => { w.print(); }, 500);
+}
 
-    } catch (err) {
-        hideLoader();
-        console.error(err);
-        alert('❌ Sınav silinirken bir hata oluştu.');
-    }
-};
+function printBulkKarneler(exam) {
+    const sts = window.currentExamData[exam];
+    const w = window.open('', '_blank');
+    let h = '<html><head><style>.p-break{page-break-after:always; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif;}</style></head><body>';
+    sts.forEach(s => {
+        h += `<div class="p-break"><div style="width:500px; padding:30px; border:5px solid #8b5cf6; border-radius:20px; text-align:center;"><h1>${exam}</h1><hr><h2>${s.student_name}</h2><div style="font-size:30px; margin:20px; color:#10b981;">NET: ${s.correct}</div><div style="font-size:40px; font-weight:bold; color:#3b82f6;">PUAN: ${s.score}</div></div></div>`;
+    });
+    h += '</body></html>';
+    w.document.write(h);
+    w.document.close();
+    setTimeout(() => { w.print(); }, 800);
+}
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
