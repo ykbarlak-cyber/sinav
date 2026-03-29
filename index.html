@@ -1857,8 +1857,7 @@ async function showAllExamResults() {
                         <td style="padding:12px; color:#10b981; font-weight:bold; text-align:center;">${s.correct || 0} Net</td>
                         <td style="padding:12px; color:#3b82f6; font-weight:bold; text-align:center;">${s.score || 0}</td>
                         <td style="padding:12px; text-align:center;">
-                            <button onclick="alert('Kaptan! Burası gerçek PDF Karne Basım Matbaası olacak! Altyapı hazır, şov çok yakında!')" style="background:#8b5cf6; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(139,92,246,0.3);">📊 Karne Çıkar</button>
-                        </td>
+<button onclick="generateStudentPDF(\`${examName}\`, \`${s.student_name || 'Bilinmeyen'}\`, \`${s.correct || 0}\`, \`${s.score || 0}\`)" style="background:#8b5cf6; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 2px 4px rgba(139,92,246,0.3);">📊 Karne Çıkar</button>                        </td>
                     </tr>`;
             });
             html += `</tbody></table></div>`;
@@ -1918,6 +1917,82 @@ window.deleteExamResults = async function(examTitle) {
         console.error(err);
         alert('❌ Sınav silinirken bir hata oluştu.');
     }
+};
+// --- VİZYON 9.0: PDF KARNE BASIM MATBAASI ---
+window.generateStudentPDF = function(examName, studentName, net, score) {
+    // Yeni bir gizli pencere aç
+    const printWindow = window.open('', '_blank');
+    
+    // Fiyakalı Karne Tasarımı (HTML & CSS)
+    const html = `
+    <html>
+    <head>
+        <title>${studentName} - Sınav Karnesi</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; padding: 40px; display: flex; justify-content: center; }
+            .karne-karti { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; border-top: 10px solid #8b5cf6; }
+            .baslik { text-align: center; color: #1e293b; margin-bottom: 30px; border-bottom: 2px dashed #cbd5e1; padding-bottom: 20px; }
+            .kurum { font-size: 1.2rem; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+            .sinav-adi { font-size: 1.8rem; color: #8b5cf6; font-weight: 900; margin: 10px 0; }
+            .ogrenci-isim { font-size: 2.2rem; text-align: center; color: #0f172a; font-weight: 800; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e2e8f0; }
+            .sonuc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .kutu { background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
+            .kutu-baslik { font-size: 1rem; color: #64748b; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+            .kutu-deger { font-size: 2.8rem; font-weight: 900; }
+            .deger-net { color: #10b981; }
+            .deger-puan { color: #3b82f6; }
+            .footer { margin-top: 40px; text-align: center; color: #94a3b8; font-size: 0.9rem; }
+            
+            /* Yazdırılırken sayfa kenarlarını sıfırla */
+            @media print {
+                body { background: white; padding: 0; }
+                .karne-karti { box-shadow: none; border: 2px solid #e2e8f0; width: 100%; }
+                @page { margin: 0; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="karne-karti">
+            <div class="baslik">
+                <div class="kurum">Eğitim Platformu</div>
+                <div class="sinav-adi">${examName}</div>
+            </div>
+            
+            <div class="ogrenci-isim">
+                👤 ${studentName}
+            </div>
+            
+            <div class="sonuc-grid">
+                <div class="kutu">
+                    <div class="kutu-baslik">Toplam Net</div>
+                    <div class="kutu-deger deger-net">${net}</div>
+                </div>
+                <div class="kutu">
+                    <div class="kutu-baslik">Sınav Puanı</div>
+                    <div class="kutu-deger deger-puan">${score}</div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                Bu dijital karne otomatik olarak oluşturulmuştur. Başarılar dileriz! 🚀
+            </div>
+        </div>
+        
+        <script>
+            // Sayfa açılır açılmaz otomatik olarak Yazdır/PDF Kaydet ekranını tetikle
+            window.onload = function() {
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            }
+        </script>
+    </body>
+    </html>
+    `;
+
+    // Yeni sekmeye kodu bas ve kapat
+    printWindow.document.write(html);
+    printWindow.document.close();
 };
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
