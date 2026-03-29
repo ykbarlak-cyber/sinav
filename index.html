@@ -1811,7 +1811,30 @@ if (myModal) {
     reader.readAsArrayBuffer(file);
 }
  // --- VİZYON 8.0: TÜM SINAV SONUÇLARI (KAYITLI + MİSAFİR) LİSTELEME MOTORU ---
-// --- VİZYON ZİRVE 2.0: PUANA DEĞİL "NETE" BAKAN GERÇEKÇİ KOÇLUK MATBAASI ---
+// --- VİZYON ZİRVE 3.0: SİLME BUTONLU, GERÇEKÇİ KOÇLUK VE KUSURSUZ MATBAA ---
+
+window.deleteExamData = async function(examName) {
+    if(!confirm(`⚠️ DİKKAT!\n\n"${examName}" sınavını ve bu sınava ait TÜM öğrenci sonuçlarını silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`)) return;
+    
+    showLoader('Sınav verileri siliniyor...');
+    try {
+        const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
+        await sbFetch(`quiz_results?quiz_title=eq.${encodeURIComponent(examName)}&class_id=eq.${currentC}`, {
+            method: 'DELETE'
+        });
+        hideLoader();
+        alert('✅ Sınav başarıyla tamamen silindi!');
+        
+        if(document.getElementById('masterResultsModal')) {
+            document.getElementById('masterResultsModal').remove();
+        }
+        showAllExamResults(); 
+    } catch (e) {
+        hideLoader();
+        console.error(e);
+        alert('❌ Silme işlemi sırasında bir hata oluştu.');
+    }
+};
 
 async function showAllExamResults() {
     const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
@@ -1819,7 +1842,7 @@ async function showAllExamResults() {
     try {
         const res = await sbFetch(`quiz_results?class_id=eq.${currentC}&order=score.desc`);
         hideLoader();
-        if (!res || res.length === 0) return alert('⚠️ Veri bulunamadı.');
+        if (!res || res.length === 0) return alert('⚠️ Henüz sistemde hiçbir sınav verisi yok.');
 
         let groupedResults = {};
         res.forEach(item => {
@@ -1835,7 +1858,7 @@ async function showAllExamResults() {
         <div id="masterResultsModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.98); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px; font-family:'Segoe UI', sans-serif;">
             <div style="width:100%; max-width:1050px; background:#fff; border-radius:24px; padding:40px; max-height:92vh; overflow-y:auto; box-shadow:0 30px 60px rgba(0,0,0,0.6); border-top:10px solid #0f172a;">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #e2e8f0; padding-bottom:20px; margin-bottom:25px;">
-                    <div><h2 style="margin:0; color:#0f172a; font-size:28px;">🎯 ÖSYM Karne ve Gerçekçi Koçluk Merkezi</h2></div>
+                    <div><h2 style="margin:0; color:#0f172a; font-size:28px;">🎯 ÖSYM Karne ve Analiz Merkezi</h2></div>
                     <button onclick="document.getElementById('masterResultsModal').remove()" style="background:#e2e8f0; color:#334155; border:none; padding:12px 25px; border-radius:12px; cursor:pointer; font-weight:900;">KAPAT</button>
                 </div>`;
 
@@ -1845,7 +1868,10 @@ async function showAllExamResults() {
                 <div style="background:#f8fafc; padding:20px; border-radius:16px; margin-bottom:25px; border:1px solid #cbd5e1;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                         <h3 style="margin:0;">📌 ${examName} <small style="color:#2563eb;">(TR Ort: ${trAvg})</small></h3>
-                        <button onclick="printBulkKarneler('${examName}')" style="background:#0f172a; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">🖨️ TOPLU YAZDIR</button>
+                        <div>
+                            <button onclick="deleteExamData('${examName}')" style="background:#dc2626; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold; margin-right:10px; transition:0.2s;" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">🗑️ SINAVI SİL</button>
+                            <button onclick="printBulkKarneler('${examName}')" style="background:#0f172a; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">🖨️ TOPLU YAZDIR</button>
+                        </div>
                     </div>
                     <table style="width:100%; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden;">
                         <tr style="background:#f1f5f9;"><th style="padding:15px; text-align:left;">ÖĞRENCİ</th><th style="padding:15px;">PUAN (NET)</th><th style="padding:15px;">İŞLEM</th></tr>`;
@@ -1879,7 +1905,7 @@ function getRealisticCoaching(net) {
             kirilim: "Seni yavaşlatan şey büyük ihtimalle 'yarım bildiğin' konular. Bu net bandında sıkışıp kalmamak için deneme çözmekten ziyade branş denemeleriyle zayıf kaslarını bulmalısın.",
             program: "• En çok fire verdiğin 2 dersi belirle ve bu derslerin branş denemelerine ağırlık ver.\n• Eksik hissettiğin konularda acilen fasikül taraması yap."
         };
-    } else if (net >= 45) { // 49 NET BURAYA DÜŞER, GERÇEKÇİ CEVAP ALIR!
+    } else if (net >= 45) { 
         return {
             teshis: "Elde ettiğin bu net (45-65 bandı), temel konularda hala ciddi eksiklerinin olduğunu ve henüz sınavın istediği analitik seviyeye ulaşmadığını gösteriyor. Puanına aldanmamalısın.",
             kirilim: "Sınav anı stresi veya 'zor deneme' bahanesine sığınmamalısın. Gerçek şu ki, ana derslerin temel dinamiği henüz oturmamış. Sürekli deneme çözmek sana şu aşamada bir şey katmaz.",
@@ -1902,7 +1928,6 @@ function generateOsymPDF(exam, s, trAvg) {
     const totalNet = parseFloat(s.correct) || 0;
     const hasDetails = (d.tN + d.mN + d.fN + d.sN) > 0;
     
-    // KOÇLUK ARTIK PUANA DEĞİL, SADECE "TOTAL NET"E BAKIYOR!
     const adv = getRealisticCoaching(totalNet);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://ykbarlak-cyber.github.io`;
 
@@ -2003,7 +2028,6 @@ function printBulkKarneler(examName) {
     setTimeout(() => { w.print(); }, 1500);
 }
 // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
-
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
