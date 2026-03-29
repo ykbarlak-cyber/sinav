@@ -1932,9 +1932,10 @@ window.generateStudentPDF = function(examName, studentName, net, score) {
             </div>
             <div class="footer">Bu dijital karne otomatik olarak oluşturulmuştur. Başarılar dileriz! 🚀</div>
         </div>
-<script>window.onload = function() { setTimeout(() => { window.print(); }, 500); }<\/script>    </body></html>`;
+    </body></html>`;
     printWindow.document.write(html);
     printWindow.document.close();
+    setTimeout(() => { printWindow.print(); }, 800);
 };
 
 // --- VİZYON 10.0: TOPLU PDF KARNE BASIM MATBAASI ---
@@ -1976,8 +1977,10 @@ window.printBulkKarneler = function(examName) {
             </div>
         </div>`;
     });
-html += `<script>window.onload = function() { setTimeout(() => { window.print(); }, 800); }<\/script></body></html>`;    printWindow.document.write(html);
+    html += `</body></html>`;
+    printWindow.document.write(html);
     printWindow.document.close();
+    setTimeout(() => { printWindow.print(); }, 1000);
 };
   // --- KAYBOLAN YAPAY ZEKA ANA BAĞLANTI MOTORU ---
 // --- V3.0 AKILLI YAPAY ZEKA BAĞLANTI MOTORU (YOĞUNLUK KORUMALI) ---
