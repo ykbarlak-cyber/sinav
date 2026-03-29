@@ -1733,13 +1733,14 @@ reader.onload = async function(e) {
         let savedCount = 0;
         const currentC = typeof activeClassId !== 'undefined' ? activeClassId : 'kpss';
         
-        // 🔥 BÜYÜK SİHİR: Sistemdeki Kayıtlı Öğrencileri Çek ve Hafızaya Al
+        // 🔥 HATA BURADAYDI, DÜZELTİLDİ: students tablosundaki sütun adını "name" olarak güncelledik.
+        // Eğer Supabase'de sütun adın "full_name" ise, aşağıdaki "name" kelimelerini "full_name" yap!
         showLoader('Kayıtlı öğrenciler taranıyor...');
-        const kayitliOgrenciler = await sbFetch(`students?class_id=eq.${currentC}&select=id,student_name`);
+        const kayitliOgrenciler = await sbFetch(`students?class_id=eq.${currentC}&select=id,name`);
         const ogrenciSozlugu = {};
         if (kayitliOgrenciler) {
             kayitliOgrenciler.forEach(o => {
-                if(o.student_name) ogrenciSozlugu[o.student_name.trim().toUpperCase()] = o.id;
+                if(o.name) ogrenciSozlugu[o.name.trim().toUpperCase()] = o.id;
             });
         }
 
@@ -1753,10 +1754,9 @@ reader.onload = async function(e) {
 
             if (!ogrenciAdi || typeof ogrenciAdi !== 'string' || ogrenciAdi === 'ADI SOYADI' || isNaN(parseFloat(tytPuani))) continue;
             
-            // Eşleşme garantisi için ismi büyük harfe çevirip boşlukları temizliyoruz
             ogrenciAdi = ogrenciAdi.trim().toUpperCase(); 
 
-            // 🔥 DEDEKTİF İŞ BAŞINDA: Eğer isim kayıtlılar listesindeyse ID'sini al, değilse boş bırak (Bursluluk)
+            // Kayıtlıysa ID'yi al, yoksa null bırak
             const matchedStudentId = ogrenciSozlugu[ogrenciAdi] || null;
 
             const dersPaketi = {
@@ -1769,7 +1769,7 @@ reader.onload = async function(e) {
             const insertData = {
                 class_id: currentC,
                 student_name: ogrenciAdi,
-                student_id: matchedStudentId, // İŞTE BU SATIR KAYITLI ÖĞRENCİNİN PROFİLİNE SINAVI GÖNDERİR!
+                student_id: matchedStudentId, 
                 score: parseFloat(tytPuani),
                 correct: parseFloat(toplamNet),
                 wrong: 0, empty: 0,
@@ -1780,7 +1780,7 @@ reader.onload = async function(e) {
             savedCount++;
         }
         hideLoader();
-        alert(`✅ ${savedCount} öğrenci başarıyla yüklendi! Kayıtlı olanlar otomatik kendi profillerine bağlandı.`);
+        alert(`✅ ${savedCount} öğrenci başarıyla yüklendi! Kayıtlı olanlar kendi profillerine bağlandı.`);
         if (typeof showAllExamResults === 'function') showAllExamResults();
     } catch (error) { 
         hideLoader(); console.error(error); alert('Hata oluştu!'); 
