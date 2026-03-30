@@ -1967,6 +1967,116 @@ function getDynamicCoaching(name, totalNet, d, hasDetails) {
     }
 }
 
+// 🔥 GERÇEK VIP EĞİTİM KOÇU (ORANSAL ANALİZ VE DİNAMİK VARYASYON MOTORU)
+function getDynamicCoaching(name, totalNet, d, hasDetails) {
+    if (!hasDetails) {
+        return { 
+            teshis: `<p>Sevgili <b>${name}</b>, şu an elimizde sadece ${totalNet} netlik genel sonucun var. Branş detayların sisteme işlenmediği için sana nokta atışı bir "zayıf halka" analizi yapamıyorum.</p>`, 
+            kirilim: `<p>Seni neyin aşağı çektiğini bilmeden rastgele ders çalışmak, pusulasız denize açılmaya benzer.</p>`, 
+            program: `<p><b>🚀 İlk Görevin:</b> Bir sonraki deneme sınavında netlerini ders bazlı olarak sisteme girmelisin ki seninle gerçek bir strateji masasına oturabilelim.</p>` 
+        };
+    }
+
+    // 1. DÜZ MANTIĞI YIKIYORUZ: SORU SAYISINA GÖRE YÜZDELİK (ORANSAL) HESAPLAMA
+    // T:40, M:40, F:20, S:20 varsayımı
+    const dersler = [
+        { ad: 'Türkçe', net: d.tN || 0, max: 40 },
+        { ad: 'Matematik', net: d.mN || 0, max: 40 },
+        { ad: 'Fen Bilimleri', net: d.fN || 0, max: 20 },
+        { ad: 'Sosyal Bilgiler', net: d.sN || 0, max: 20 }
+    ];
+
+    // Netleri maksimum soru sayısına bölerek GERÇEK başarı oranını buluyoruz
+    dersler.sort((a, b) => (a.net / a.max) - (b.net / b.max));
+
+    const enZayif = dersler[0];
+    const enIyi = dersler[3];
+
+    // 2. KOPYA METİNLERİ ENGELLİYORUZ: İSME DUYARLI RASTGELE SEÇİCİ
+    // İsmin harf değerlerini toplayıp 3'e bölerek (0,1,2) sabit ama kişiye özel varyasyon seçiyoruz.
+    let seed = 0;
+    for(let i=0; i<name.length; i++) seed += name.charCodeAt(i);
+    const v = seed % 3;
+
+    let teshis, kirilim, program;
+
+    if (totalNet >= 80) {
+        const teshisler = [
+            `<p>Sevgili <b>${name}</b>, ${totalNet} netlik bu harika skor, seninle artık 'sınavı kazanmayı' değil, <b>'derece yapmayı'</b> konuştuğumuzun kanıtı. Özellikle oransal olarak en yüksek başarıyı gösterdiğin <b>${enIyi.ad}</b> branşı, kriz yönetiminin ne kadar keskinleştiğini gösteriyor.</p>`,
+            `<p>Harika bir iş çıkardın <b>${name}</b>! ${totalNet} net ile elit bir dilime yerleştin. <b>${enIyi.ad}</b> testindeki yüksek isabet oranın tesadüf değil, oturmuş bir akademik altyapının eseri.</p>`,
+            `<p>Tebrikler <b>${name}</b>. ${totalNet} netlik bu sonuç seni doğrudan zirve yarışına sokuyor. Analitik zekanı en iyi yansıttığın <b>${enIyi.ad}</b> performansı gerçekten göz dolduruyor.</p>`
+        ];
+        const kirilimlar = [
+            `<p>Ancak zirvenin kuralları acımasızdır. Bizi geriye düşürecek şey bilgi eksikliği değil, dikkat hatalarıdır. Oransal olarak en çok fire verdiğin <b>${enZayif.ad}</b> dersindeki (${enZayif.net} net) ufak kayıpların, odak kaybından kaynaklanıyor olabilir.</p>`,
+            `<p>Şimdi kritik soru şu: Bizi 100+ netlere ne taşıyacak? Tabloya göre <b>${enZayif.ad}</b> (${enZayif.net} net) branşında hala kapatabileceğimiz açıklar var. Bu seviyede 1 net bile binlerce kişiyi eler.</p>`,
+            `<p>Mükemmeli arıyorsak, <b>${enZayif.ad}</b> tarafındaki (${enZayif.net} net) fireleri sıfıra indirmeliyiz. Aşil topuğumuz şu an burası ve oraya neşter vurma vakti geldi.</p>`
+        ];
+        const programlar = [
+            `<p><b>🏆 VIP Derece Görevleri:</b></p><ul><li><b>Hata Defteri:</b> Doğru çözdüğün soruları geç. Yanlışlarına ve boşlarına odaklan.</li><li><b>Zaman Presi:</b> Denemelerini normalden 15 dakika eksik çöz.</li><li><b>Odak:</b> Bu hafta <b>${enZayif.ad}</b> dersinden 3 adet zor seviye branş denemesi çözülecek.</li></ul>`,
+            `<p><b>🏆 Zirve Taktikleri:</b></p><ul><li><b>Turlama Tekniği:</b> Sınav anı stratejini mükemmelleştir.</li><li><b>Nokta Atışı:</b> <b>${enZayif.ad}</b> dersinde en çok vakit kaybettiğin konu tipini tespit edip 50 soru ile ez.</li><li><b>Mental Antrenman:</b> Zor sorularla inatlaşmadan geçme pratiği yap.</li></ul>`,
+            `<p><b>🏆 Şampiyonluk Ritüeli:</b></p><ul><li><b>Derin Analiz:</b> Sınav sonrası analiz süren, sınav sürenden uzun olmalı.</li><li><b>Yüklenme:</b> <b>${enZayif.ad}</b> zayıf kasımız, bu hafta bu dersten özel bir fasikül taraması yapılacak.</li></ul>`
+        ];
+        teshis = teshisler[v]; kirilim = kirilimlar[v]; program = programlar[v];
+    } else if (totalNet >= 50) {
+        const teshisler = [
+            `<p>Sevgili <b>${name}</b>, ${totalNet} net ile yarışın en ateşli olduğu tam orta banttasın! Soru sayısına oranla en yüksek başarıyı elde ettiğin <b>${enIyi.ad}</b> dersindeki performansın, 'Ben bu işi başarabilirim' sinyalini veriyor.</p>`,
+            `<p><b>${name}</b>, ${totalNet} netlik sonuç senin potansiyelinin sadece bir kısmı. <b>${enIyi.ad}</b> dersinde gösterdiğin yüksek başarı oranı, doğru çalışma sistemiyle her şeyi yapabileceğinin ispatı.</p>`,
+            `<p>İyi bir ivme yakaladın <b>${name}</b>. ${totalNet} net gayet umut verici, asıl sevindirici olan ise <b>${enIyi.ad}</b> dersindeki isabet oranın. Temel konulardaki hakimiyetin göze çarpıyor.</p>`
+        ];
+        const kirilimlar = [
+            `<p>Buna karşılık, puanını sıçratmanı engelleyen ve seni adeta tutan dersin <b>${enZayif.ad}</b> (${enZayif.net} net) olduğu çok açık. Sadece sevdiğin derslere çalışarak o büyük sıçramayı yaşayamazsın.</p>`,
+            `<p>Ancak gerçeklerle yüzleşelim: <b>${enZayif.ad}</b> (${enZayif.net} net) branşından kaçtığın sürece puanın belli bir bantta sıkışıp kalacak. Konfor alanından çıkma vaktimiz geldi.</p>`,
+            `<p>Seni geriye çeken ana faktör oransal olarak en kötü olduğun <b>${enZayif.ad}</b> dersindeki (${enZayif.net} net) eksiklerin. Zincir en zayıf halkası kadar güçlüdür. Bu dersteki korkunu yenmeliyiz.</p>`
+        ];
+        const programlar = [
+            `<p><b>🚀 Taktiksel Sıçrama Programı:</b></p><ul><li><b>Öncelik Değişimi:</b> Masaya oturduğunda ilk çalışacağın ders en sevdiğin değil, <b>${enZayif.ad}</b> olacak!</li><li><b>Pomodoro:</b> 25 dk odak, 5 dk mola ile <b>${enZayif.ad}</b> dersinin temel 2 konusunu baştan dinle.</li><li><b>Pratik:</b> Konu bitiminde anında kavrama soruları çöz.</li></ul>`,
+            `<p><b>🚀 Gelişim Rotası:</b></p><ul><li><b>Yüzleşme:</b> Bu hafta genel deneme yerine <b>${enZayif.ad}</b> branş denemesine ağırlık ver.</li><li><b>Kavram Haritası:</b> Eksik olduğun konuları büyük bir kağıda çizip özet çıkar.</li><li><b>Rutin:</b> Paragraf ve problem çözme rutinini asla aksatma.</li></ul>`,
+            `<p><b>🚀 Odak Noktası:</b></p><ul><li><b>Sabır Antrenmanı:</b> <b>${enZayif.ad}</b> dersinde yapamadığın soruları birilerine sormadan önce 10 dakika kendin uğraş.</li><li><b>Temel İnşa:</b> Günde 1 saati sadece bu zayıf derse ayır.</li></ul>`
+        ];
+        teshis = teshisler[v]; kirilim = kirilimlar[v]; program = programlar[v];
+    } else if (totalNet >= 25) {
+        const teshisler = [
+            `<p>Sevgili <b>${name}</b>, çabanı takdir ediyorum ancak sana dürüst olmalıyım: ${totalNet} net, hedeflerin için henüz yeterli değil. En güvendiğin <b>${enIyi.ad}</b> dersinde bile tam potansiyelini göremiyoruz.</p>`,
+            `<p><b>${name}</b>, ${totalNet} netlik tablo bize çalışma sistemimizde bir hata olduğunu gösteriyor. Nispeten iyi olduğun <b>${enIyi.ad}</b> dersi dışında diğer branşlarda temeli oturtamamışız.</p>`,
+            `<p>Gerçekçi olalım <b>${name}</b>; ${totalNet} net ile hayallerimiz arasında mesafe var. <b>${enIyi.ad}</b> branşı sana biraz nefes aldırsa da, bütünde strateji değişikliğine ihtiyacımız var.</p>`
+        ];
+        const kirilimlar = [
+            `<p>Tablo bize bir gerçeği haykırıyor: Sürekli deneme çözerek zaman kaybediyorsun. Özellikle <b>${enZayif.ad}</b> (${enZayif.net} net) dersinde binanın temeli atılmadan çatı çıkılmaya çalışılmış.</p>`,
+            `<p>İlerlemeni durduran duvar tam olarak <b>${enZayif.ad}</b> dersi (${enZayif.net} net). Bu derste bilgi eksikken test çözmek sadece özgüvenini yaralar. Geriye dönmeliyiz.</p>`,
+            `<p>Özellikle oransal olarak en çok zorlandığın <b>${enZayif.ad}</b> (${enZayif.net} net) dersinde temel kavramların tamamen havada kaldığını görüyoruz. Zor soruları şimdilik bırakmalısın.</p>`
+        ];
+        const programlar = [
+            `<p><b>🧱 Temel İnşa Programı:</b></p><ul><li><b>Deneme Diyeti:</b> Bu hafta genel deneme çözmeyi bırakıyorsun. Moral bozucu zor testleri rafa kaldır.</li><li><b>Sıfırdan Alıyoruz:</b> <b>${enZayif.ad}</b> dersinin ilk 3 konusuna 'hiç bilmiyormuşsun' gibi sıfırdan eğitim videolarıyla başla.</li><li><b>Yazarak Çalışma:</b> Konunun özetini kendi cümlelerinle yazmadan teste geçme!</li></ul>`,
+            `<p><b>🧱 Yeniden Başlangıç:</b></p><ul><li><b>Taktikleri Unut:</b> Test çözme taktiklerini bir kenara bırakıp tamamen konu anlatımına yönel.</li><li><b>Odaklanma:</b> Tüm enerjini Türkçe ve <b>${enZayif.ad}</b> derslerinin temellerini anlamaya harca.</li><li><b>Video Destekli İlerleme:</b> Çözemediğin her sorunun çözüm videosunu izle.</li></ul>`,
+            `<p><b>🧱 Sağlam Temel Kampı:</b></p><ul><li><b>Seçici Çalışma:</b> Karmaşık kaynakları dolaba kaldır, en basit seviye kitapları masana koy.</li><li><b>Sabır:</b> <b>${enZayif.ad}</b> dersinde hemen net beklemek yerine "anlamaya" odaklan.</li><li><b>Küçük Hedefler:</b> Her gün sadece 2 konuyu tam anlamıyla bitir.</li></ul>`
+        ];
+        teshis = teshisler[v]; kirilim = kirilimlar[v]; program = programlar[v];
+    } else {
+        const teshisler = [
+            `<p>Sevgili <b>${name}</b>, bu ${totalNet} netlik tablo seni umutsuzluğa düşürmesin. Bir eğitim koçu olarak söylüyorum: Bu bir bitiş çizgisi değil, senin sıçrama tahtandır.</p>`,
+            `<p>Sınav sonuçları bazen can sıkıcı olabilir <b>${name}</b>. ${totalNet} net, bugüne kadar uyguladığın çalışma sisteminin çalışmadığını gösteriyor. Değişim vakti geldi.</p>`,
+            `<p>Moral bozmak yok <b>${name}</b>! ${totalNet} netlik bu tablo sadece bir başlangıç noktası. Nerede olduğumuzu bildiğimize göre, nereye gideceğimizi planlayabiliriz.</p>`
+        ];
+        const kirilimlar = [
+            `<p>Rakamlara baktığımda, özellikle <b>${enZayif.ad}</b> (${enZayif.net} net) dersinde temel akademik becerilerin henüz aktive olmadığını görüyorum. Çalışma sistemimizi kökten değiştiriyoruz.</p>`,
+            `<p>Şu an seni en çok zorlayan alanın <b>${enZayif.ad}</b> (${enZayif.net} net) olduğu net. Bu dersi yapamadığın için değil, nasıl çalışman gerektiğini bilmediğin için bu durumdasın.</p>`,
+            `<p>Ana sorunumuz, <b>${enZayif.ad}</b> (${enZayif.net} net) başta olmak üzere temel kavram eksikliklerimiz. Hiçbir binanın temeli olmadan 5. katı inşa edilemez.</p>`
+        ];
+        const programlar = [
+            `<p><b>🌱 Uyanış ve Disiplin:</b></p><ul><li><b>Dijital Detoks:</b> Günde 2 saat telefonunu tamamen kapatıp masaya oturma disiplini kazanmalısın.</li><li><b>Okuma Terapisi:</b> Hızı ve anlamayı artırmak için her gün 20 sayfa kitap oku.</li><li><b>Temele Dönüş:</b> <b>${enZayif.ad}</b> dersinde karmaşık sorulara bulaşmadan, en kolay kaynaklardan başla.</li></ul>`,
+            `<p><b>🌱 İlk Adım Programı:</b></p><ul><li><b>Masa Disiplini:</b> Süreden ziyade, "kalkmadan ders çalışma" alışkanlığı inşa et.</li><li><b>Basit Başla:</b> <b>${enZayif.ad}</b> dersinde dört işlem ve temel okuma-anlama düzeyindeki testlere odaklan.</li><li><b>Soru Sorma Çekinme:</b> Takıldığın en ufak detayı bile hocalara sorma cesaretini göster.</li></ul>`,
+            `<p><b>🌱 Yeniden Doğuş:</b></p><ul><li><b>Kıyaslamayı Bırak:</b> Rakiplerinin değil, dünkü kendinin netlerine odaklan.</li><li><b>İlk Zaferler:</b> Güvenini yerine getirmek için <b>${enZayif.ad}</b> dersinin en kolay konusunu seç ve onu fullemeye oyna.</li><li><b>Tutarlılık:</b> Günde 5 saat çalışıp 3 gün yatmak yerine, her gün düzenli 2 saat çalış.</li></ul>`
+        ];
+        teshis = teshisler[v]; kirilim = kirilimlar[v]; program = programlar[v];
+    }
+    
+    return { teshis, kirilim, program };
+}
+
+// -----------------------------------------------------
+// KODUN GERİ KALANI (PDF ve TOPLU YAZDIRMA - DEĞİŞMEDİ)
+// -----------------------------------------------------
+
 function generateOsymPDF(exam, s, trAvg) {
     let d = { tD:0, tY:0, tN:0, mD:0, mY:0, mN:0, fD:0, fY:0, fN:0, sD:0, sY:0, sN:0 };
     try { if (s.branch) { d = {...d, ...JSON.parse(s.branch)}; } } catch(e) {}
